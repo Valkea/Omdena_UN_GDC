@@ -1,18 +1,14 @@
 #! /usr/bin/env python3
 
 import re
-# import unidecode
 import os
 import pathlib
 import requests
-#import pandas as pd
-# from datetime import timedelta
 
 import urllib.request
 from urllib.error import HTTPError
 
 from prefect import flow, task
-#from prefect_gcp.cloud_storage import GcsBucket
 from prefect_aws import S3Bucket
 from prefect.tasks import task_input_hash
 
@@ -92,7 +88,7 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
 
     source_url = 'https://www.un.org/techenvoy/global-digital-compact/submissions'
     base_files = "https://www.un.org/techenvoy/sites/www.un.org.techenvoy/files/"
-    local_dir = 'dataXXX'
+    local_dir = 'data'
 
     html_code = get_html(source_url)
     files = get_files_uris(html_code, base_files)
