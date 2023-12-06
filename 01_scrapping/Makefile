@@ -7,7 +7,7 @@ setup_prefect_blocks:
 
 setup_prefect_deployment:
 	@echo "Initialize prefect deployment"
-	prefect deployment build flows/etl_main.py:etl_main_flow --name omdena_un_gdc --cron "0 0 * * *" -a
+	prefect deployment build flows/etl_main.py:omdena_ungdc_etl_main_flow --name omdena_un_gdc --cron "0 0 * * *" -a
 
 start_agent:
 	@echo "Start prefect agent"
