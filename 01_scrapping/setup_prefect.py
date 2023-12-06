@@ -11,12 +11,12 @@ from dotenv import load_dotenv, find_dotenv
 _ = load_dotenv(find_dotenv())  # read local .env file
 
 
-def register_blocks(project_id):
+def register_blocks():
 
     # --- Register some variables
 
-    json_block = JSON(value={"project_id": project_id})
-    json_block.save(name="omdena-un-gdc-variables", overwrite=True)
+    # json_block = JSON(value={"project_id": project_id})
+    # json_block.save(name="omdena-un-gdc-variables", overwrite=True)
 
     # --- Register AWS credential block
 
@@ -24,26 +24,27 @@ def register_blocks(project_id):
         aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
         aws_secret_access_key=os.environ["AWS_SECRET_KEY"],
         aws_session_token=None,  # replace this with token if necessary
-        region_name="eu-west-1"
+        region_name="eu-west-1",
     )
     credentials_block.save("omdena-un-gdc-creds", overwrite=True)
 
     # --- Register AWS-S3 bucket storage block
 
     bucket_block = S3Bucket(
+        credentials=AwsCredentials.load("omdena-un-gdc-creds"),
         bucket_name="omdena-un-gdc-bucket",
-        aws_credentials=AwsCredentials.load("omdena-un-gdc-creds")
     )
     bucket_block.save("omdena-un-gdc-bucket", overwrite=True)
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('project_id', type=str, help="The AWS project id")
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('project_id', type=str, help="The AWS project id")
+    # args = parser.parse_args()
 
-    register_blocks(args.project_id)
+    # register_blocks(args.project_id)
+    register_blocks()
 
     # j = JSON.load("omdena-un-gdc-variables")
     # print("TEST:", j)

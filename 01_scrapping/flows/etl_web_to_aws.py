@@ -4,9 +4,7 @@ import re
 import os
 import pathlib
 import requests
-
-import urllib.request
-from urllib.error import HTTPError
+from datetime import timedelta
 
 from prefect import flow, task
 from prefect_aws import S3Bucket
@@ -44,39 +42,44 @@ def get_files_uris(html_code:str, base_files:str) -> list:
     return [f"{x[0]}" for x in files]
 
 
-@task(name="Write Data Locally", log_prints=True)
-def write_local(files:list, base_url:str, local_dir:pathlib.Path) -> list:
+@task(
+    name="Write Data Locally",
+    log_prints=True,
+    cache_key_fn=task_input_hash,
+    cache_expiration=timedelta(days=1),
+)
+def write_local(base_url:str, file_name:str, local_dir:pathlib.Path) -> pathlib.Path:
     """Write the DataFrame out locally as a Parquet file"""
 
-    path_list = []
+    try:
+        file_path = f"{base_url}{file_name}"
+        print("Download from source:", file_name, file_path)
 
-    if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
+        r = requests.get(file_path, allow_redirects=True, headers=headers)
+        local_path = pathlib.Path(local_dir, file_name)
+        open(local_path, 'wb').write(r.content)
 
-    for file_name in files:
-        try:
-            file_path = f"{base_url}{file_name}"
-            print("Download:", file_name, file_path)
+        return local_path
 
-            r = requests.get(file_path, allow_redirects=True, headers=headers)
-            local_path = pathlib.Path(local_dir, file_name)
-            open(local_path, 'wb').write(r.content)
-            path_list.append(local_path)
+    except Exception as e:
+        print(e, file_name)
 
-        except HTTPError as e:
-            print(e, file_name)
 
-    return path_list
-
-@task(name="Write Data on AWS-S3", log_prints=True)
-def write_AWS(path_list:list) -> None:
+@task(
+    name="Write Data on AWS-S3",
+    log_prints=True,
+    cache_key_fn=task_input_hash,
+    cache_expiration=timedelta(days=1),
+)
+def write_AWS(local_path:str, file_name:str, bucket_block:S3Bucket) -> None:
     """Copy the files to AWS-S3"""
 
-    bucket_block = S3Bucket.load("omdena-un-gdc-bucket")
+    try:
+        print("Upload to S3:", local_path)
+        bucket_block.upload_from_path(from_path=local_path, to_path=file_name)
 
-    for p in path_list:
-        print("Upload:", p)
-        bucket_block.upload_from_path(from_path=p, to_path=p)
+    except Exception as e:
+        print(e, file_name)
 
 
 @flow(log_prints=True)
@@ -86,12 +89,19 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
 
     source_url = 'https://www.un.org/techenvoy/global-digital-compact/submissions'
     base_files = "https://www.un.org/techenvoy/sites/www.un.org.techenvoy/files/"
+
     local_dir = 'data'
+    bucket_block = S3Bucket.load("omdena-un-gdc-bucket")
+
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
 
     html_code = get_html(source_url)
     files = get_files_uris(html_code, base_files)
-    path_list = write_local(files, base_files, local_dir)
-    write_AWS(path_list)
+
+    for file_name in files:
+        local_path = write_local(base_files, file_name, local_dir)
+        write_AWS(local_path, file_name, bucket_block)
 
 if __name__ == "__main__":
     omdena_ungdc_etl_web_to_aws_parent()
