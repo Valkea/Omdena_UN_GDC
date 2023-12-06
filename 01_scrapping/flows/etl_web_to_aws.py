@@ -66,8 +66,6 @@ def write_local(files:list, base_url:str, local_dir:pathlib.Path) -> list:
         except HTTPError as e:
             print(e, file_name)
 
-    raise Exception("stop")
-
     return path_list
 
 @task(name="Write Data on AWS-S3", log_prints=True)
