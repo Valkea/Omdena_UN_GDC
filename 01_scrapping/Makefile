@@ -1,10 +1,9 @@
 
 PROJECT_ID = "omdena-un-gdc"
-CREDS_PATH = "creds/XXX.json"
 
 setup_prefect_blocks:
 	@echo "Initialiaze prefect blocks"
-	python setup_prefect.py ${CREDS_PATH} ${PROJECT_ID}
+	python setup_prefect.py ${PROJECT_ID}
 
 setup_prefect_deployment:
 	@echo "Initialize prefect deployment"
