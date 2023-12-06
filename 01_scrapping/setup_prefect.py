@@ -2,9 +2,6 @@ import os
 import argparse
 from prefect.blocks.system import JSON
 from prefect_aws import AwsCredentials, S3Bucket
-# from prefect_gcp import GcpCredentials
-# from prefect_gcp.cloud_storage import GcsBucket
-# from prefect_gcp.bigquery import BigQueryWarehouse
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -12,12 +9,6 @@ _ = load_dotenv(find_dotenv())  # read local .env file
 
 
 def register_blocks():
-
-    # --- Register some variables
-
-    # json_block = JSON(value={"project_id": project_id})
-    # json_block.save(name="omdena-un-gdc-variables", overwrite=True)
-
     # --- Register AWS credential block
 
     credentials_block = AwsCredentials(
@@ -38,14 +29,4 @@ def register_blocks():
 
 
 if __name__ == "__main__":
-
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('project_id', type=str, help="The AWS project id")
-    # args = parser.parse_args()
-
-    # register_blocks(args.project_id)
     register_blocks()
-
-    # j = JSON.load("omdena-un-gdc-variables")
-    # print("TEST:", j)
-    # print("TEST:", j.value['project_id'])
