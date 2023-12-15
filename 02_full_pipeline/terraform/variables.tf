@@ -11,7 +11,7 @@ variable "instance_ami" {
 
 variable "spot_instance" {
   type = string
-  default = "true"
+  default = "false"
   description = "This value is true if we want to use a spot instance instead of a regular one"
 }
 

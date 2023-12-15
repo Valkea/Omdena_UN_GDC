@@ -122,6 +122,105 @@ resource "aws_instance" "my_ec2_instance" {
 #   }
 }
 
+
+################################################################################
+# AWS EventBridge Scheduler                                                        
+################################################################################
+
+resource "aws_scheduler_schedule" "ec2-start-schedule" {
+  name = "ec2-start-schedule"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "cron(0,15,30,45 * ? * MON-FRI *)"
+  # schedule_expression_timezone = "US/Eastern" # Default is UTC
+  description = "Start instances event"
+
+  target {
+    arn = "arn:aws:scheduler:::aws-sdk:ec2:startInstances"
+    role_arn = aws_iam_role.scheduler-ec2-role.arn
+
+    input = jsonencode({
+      "InstanceIds": [
+        # "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}",
+        "${aws_instance.my_ec2_instance[0].id}",
+      ]
+    })
+  }
+}
+
+resource "aws_scheduler_schedule" "ec2-stop-schedule" {
+  name = "ec2-stop-schedule"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "cron(5,20,35,50 * ? * MON-FRI *)"
+  # schedule_expression_timezone = "US/Eastern" # Default is UTC
+  description = "Stop instances event"
+
+  target {
+    arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+    role_arn = aws_iam_role.scheduler-ec2-role.arn
+
+    input = jsonencode({
+      "InstanceIds": [
+        # "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}",
+        "${aws_instance.my_ec2_instance[0].id}",
+      ]
+    })
+  }
+}
+
+resource "aws_iam_policy" "scheduler_ec2_policy" {
+  name = "scheduler_ec2_policy"
+
+  policy = jsonencode(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "VisualEditor0",
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:StartInstances",
+                    "ec2:StopInstances"
+                ],
+                "Resource": [
+                  "${aws_instance.my_ec2_instance[0].arn}:*",
+                  "${aws_instance.my_ec2_instance[0].arn}"
+                  # "${aws_spot_instance_request.my_ec2_spot_instance[0].arn}:*",
+                  # "${aws_spot_instance_request.my_ec2_spot_instance[0].arn}"
+                ],
+            }
+        ]
+    }
+  )
+}
+
+resource "aws_iam_role" "scheduler-ec2-role" {
+  name = "scheduler-ec2-role"
+  managed_policy_arns = [aws_iam_policy.scheduler_ec2_policy.arn]
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+
 ################################################################################
 # AWS S3 Bucket
 ################################################################################

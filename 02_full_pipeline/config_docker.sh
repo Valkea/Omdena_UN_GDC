@@ -15,7 +15,7 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 
 echo "" && echo "@@@@@@@@@@@@@@@ Step 2 : Run a docker image"
 
-sudo docker run -d -p 5000:5000 --pull=always --privileged valkea/deploy_lab:latest
+sudo docker run -d -p 5000:5000 --pull=always --restart=always --privileged valkea/deploy_lab:latest
 
 echo "" && echo "@@@@@@@@@@@@@@@ Step 3 : Check the running images"
 
