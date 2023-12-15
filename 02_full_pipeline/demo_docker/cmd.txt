@@ -1,0 +1,22 @@
+Building a Docker image
+
+>> docker build -t deploy_lab .
+
+
+Running a local Docker image
+
+>> docker run -it -p 5000:5000 deploy_lab:latest
+
+
+Pushing the image to DockerHub
+
+>> docker tag deploy_lab:latest valkea/deploy_lab:latest
+>> docker push valkea/deploy_lab:latest
+
+
+Pulling a Docker image from Docker-Hub
+
+>> docker pull valkea/deploy_lab:latest
+
+Pulling AND running a Docker image from Docker-Hub
+>> docker run -it -p 5000:5000 valkea/deploy_lab:latest
