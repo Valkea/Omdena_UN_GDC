@@ -11,7 +11,7 @@ variable "instance_ami" {
 
 variable "spot_instance" {
   type = string
-  default = "false"
+  default = "true"
   description = "This value is true if we want to use a spot instance instead of a regular one"
 }
 
@@ -23,7 +23,8 @@ variable "spot_price" {
 
 variable "spot_type" {
   type = string
-  default = "one-time"
+  default = "persistent"
+# default = "one-time"
   description = "Spot instance type, this value only applies for spot instance type."
 }
 
@@ -31,6 +32,24 @@ variable "s3_instance" {
   type = string
   default = "false"
   description = "This value is true if we want to use an S3 instance"
+}
+
+variable "scheduler_start_cron" {
+  type = string
+  default = "cron(0,15,30,45 * ? * MON-FRI *)"
+  description = "The (AWS) cron expession for stopping the EC2 instance for the data-collection & indexing"
+}
+
+variable "scheduler_stop_cron" {
+  type = string
+  default = "cron(5,20,35,50 * ? * MON-FRI *)"
+  description = "The (AWS) cron expession for starting the EC2 instance for the data-collection & indexing"
+}
+
+variable "scheduler_cron_timezine" {
+  type = string
+  default = "UTC"
+  description = "The timezone for the start and stop cron expressions"
 }
 
 # locals {

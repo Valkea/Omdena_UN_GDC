@@ -53,13 +53,9 @@ resource "aws_key_pair" "deployer" {
 }
 
 resource "aws_eip" "ip-vps-env" {
+  domain   = "vpc"
   instance = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
 
-  domain      = "vpc"
-  depends_on = [
-	aws_spot_instance_request.my_ec2_spot_instance, 
-	aws_instance.my_ec2_instance
-  ]
 }
 
 resource "aws_spot_instance_request" "my_ec2_spot_instance" {
@@ -122,6 +118,13 @@ resource "aws_instance" "my_ec2_instance" {
 #   }
 }
 
+# Define the initial state of the EC2 instance 
+
+resource "aws_ec2_instance_state" "my_ec2_state" {
+  instance_id = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+  state       = "stopped"
+}
+
 
 ################################################################################
 # AWS EventBridge Scheduler                                                        
@@ -134,8 +137,8 @@ resource "aws_scheduler_schedule" "ec2-start-schedule" {
     mode = "OFF"
   }
 
-  schedule_expression = "cron(0,15,30,45 * ? * MON-FRI *)"
-  # schedule_expression_timezone = "US/Eastern" # Default is UTC
+  schedule_expression = var.scheduler_start_cron
+  schedule_expression_timezone = var.scheduler_cron_timezine
   description = "Start instances event"
 
   target {
@@ -144,8 +147,7 @@ resource "aws_scheduler_schedule" "ec2-start-schedule" {
 
     input = jsonencode({
       "InstanceIds": [
-        # "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}",
-        "${aws_instance.my_ec2_instance[0].id}",
+  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
       ]
     })
   }
@@ -158,8 +160,8 @@ resource "aws_scheduler_schedule" "ec2-stop-schedule" {
     mode = "OFF"
   }
 
-  schedule_expression = "cron(5,20,35,50 * ? * MON-FRI *)"
-  # schedule_expression_timezone = "US/Eastern" # Default is UTC
+  schedule_expression = var.scheduler_stop_cron
+  schedule_expression_timezone = var.scheduler_cron_timezine
   description = "Stop instances event"
 
   target {
@@ -168,8 +170,7 @@ resource "aws_scheduler_schedule" "ec2-stop-schedule" {
 
     input = jsonencode({
       "InstanceIds": [
-        # "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}",
-        "${aws_instance.my_ec2_instance[0].id}",
+  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
       ]
     })
   }
@@ -190,10 +191,9 @@ resource "aws_iam_policy" "scheduler_ec2_policy" {
                     "ec2:StopInstances"
                 ],
                 "Resource": [
-                  "${aws_instance.my_ec2_instance[0].arn}:*",
-                  "${aws_instance.my_ec2_instance[0].arn}"
-                  # "${aws_spot_instance_request.my_ec2_spot_instance[0].arn}:*",
-                  # "${aws_spot_instance_request.my_ec2_spot_instance[0].arn}"
+  		    "*",
+		    # "${aws_instance.my_ec2_instance[0].arn}:*",
+		    # "${aws_instance.my_ec2_instance[0].arn}"
                 ],
             }
         ]
