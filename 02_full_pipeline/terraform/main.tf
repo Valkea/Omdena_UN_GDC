@@ -14,6 +14,10 @@ provider "aws" {
   region = "eu-west-1"
 }
 
+################################################################################
+# AWS Security Group
+################################################################################
+
 resource "aws_security_group" "sg" {
   name        = "deploy_lab_security"
   description = "Allow TLS inbound traffic"
@@ -49,14 +53,17 @@ resource "aws_security_group" "sg" {
 
 resource "aws_key_pair" "deployer" {
   key_name   = "terraform"
-  public_key = file("../output.pem.pub")
+  # public_key = file("../output.pem.pub")
+  public_key = file(var.ec2_pem_pub_file)
 }
 
-resource "aws_eip" "ip-vps-env" {
-  domain   = "vpc"
-  instance = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-
-}
+# Not compatible with the EC2 'stopped' initial state
+#
+# resource "aws_eip" "ip-vps-env" {
+#   domain   = "vpc"
+#   instance = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+# 
+# }
 
 resource "aws_spot_instance_request" "my_ec2_spot_instance" {
   ami           = var.instance_ami
@@ -75,20 +82,11 @@ resource "aws_spot_instance_request" "my_ec2_spot_instance" {
   }
 
   key_name  = aws_key_pair.deployer.id
-  user_data = file("../config_docker.sh")
-#
-#  provisioner "file" {
-#    source      = "../config_docker.sh"
-#    destination = "/tmp/script.sh"
-#  
-#    connection {
-#      type     = "ssh"
-#      user     = "ubuntu"
-#      private_key = file("../output.pem")
-#      host = self.public_ip
-#    }
-#  }
-
+  # user_data = file("../config_docker.sh")
+  # user_data = file(var.ec2_config_file)
+  user_data = base64encode(templatefile(var.ec2_config_file, {
+        docker_image = var.prepro_docker_image
+      } ))
 }
 
 resource "aws_instance" "my_ec2_instance" {
@@ -103,19 +101,11 @@ resource "aws_instance" "my_ec2_instance" {
   }
 
   key_name  = aws_key_pair.deployer.id
-  user_data = file("../config_docker.sh")
-
-#   provisioner "file" {
-#     source      = "../config_docker.sh"
-#     destination = "/tmp/script.sh"
-#   
-#     connection {
-#       type     = "ssh"
-#       user     = "ubuntu"
-#       private_key = file("../output.pem")
-#       host = self.public_ip
-#     }
-#   }
+  # user_data = file("../config_docker.sh")
+  # user_data = file(var.ec2_config_file)
+  user_data = base64encode(templatefile(var.ec2_config_file, {
+        docker_image = var.prepro_docker_image
+      } ))
 }
 
 # Define the initial state of the EC2 instance 
@@ -228,11 +218,11 @@ resource "aws_iam_role" "scheduler-ec2-role" {
 
 resource "aws_s3_bucket" "gdc_bucket" {
   bucket 	= "omdena-un-gdc-bucket-02"
-  force_destroy = true
+  force_destroy = var.s3_force_destroy
   count 	= "${var.s3_instance == "true" ? 1 : 0}"
 
   tags = {
-    Name        = "omdena-un-gdc-bucket-02"
+    Name        = var.s3_name
     Environment = "Dev"
   }
 }
