@@ -58,12 +58,12 @@ resource "aws_key_pair" "deployer" {
 }
 
 # Not compatible with the EC2 'stopped' initial state
-#
-# resource "aws_eip" "ip-vps-env" {
-#   domain   = "vpc"
-#   instance = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-# 
-# }
+
+resource "aws_eip" "ip-vps-env" {
+  domain   = "vpc"
+  instance = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+
+}
 
 resource "aws_spot_instance_request" "my_ec2_spot_instance" {
   ami           = var.instance_ami
@@ -110,10 +110,10 @@ resource "aws_instance" "my_ec2_instance" {
 
 # Define the initial state of the EC2 instance 
 
-resource "aws_ec2_instance_state" "my_ec2_state" {
-  instance_id = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-  state       = "stopped"
-}
+# resource "aws_ec2_instance_state" "my_ec2_state" {
+#   instance_id = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+#   state       = "stopped"
+# }
 
 
 ################################################################################
@@ -153,6 +153,35 @@ resource "aws_scheduler_schedule" "ec2-stop-schedule" {
   schedule_expression = var.scheduler_stop_cron
   schedule_expression_timezone = var.scheduler_cron_timezine
   description = "Stop instances event"
+
+  target {
+    arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+    role_arn = aws_iam_role.scheduler-ec2-role.arn
+
+    input = jsonencode({
+      "InstanceIds": [
+  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+      ]
+    })
+  }
+}
+
+locals {
+  shut_time = substr(tostring(timeadd(timestamp(), "5m")), 0, 19)
+  # shut_time = formatdate("YYYY-MM-DDThh:mm:ss", timeadd(timestamp(), "5m"))
+  shut_zone = formatdate("ZZZ", timestamp())
+}
+
+resource "aws_scheduler_schedule" "ec2-stop-once-schedule" {
+  name = "ec2-stop-once-schedule"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+ 
+  schedule_expression = "at(${local.shut_time})"
+  schedule_expression_timezone = local.shut_zone
+  description = "Stop once instances event"
 
   target {
     arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
