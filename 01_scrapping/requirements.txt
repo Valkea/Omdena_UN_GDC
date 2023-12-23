@@ -3,7 +3,11 @@ pydantic==1.10.11
 prefect-aws[S3]
 python-dotenv
 pandas
-pypdf2
+# pypdf2
+# llama-index
+# llmsherpa
+# llama-hub
+deepsearch-toolkit
 
 # prefect-gcp[cloud_storage]==0.2.3
 # pandas==1.5.2

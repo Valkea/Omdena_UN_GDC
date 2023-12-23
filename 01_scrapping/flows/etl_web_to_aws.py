@@ -15,7 +15,9 @@ from PyPDF2 import PdfReader
 
 from prefect import flow, task
 from prefect_aws import S3Bucket
-from prefect.tasks import task_input_hash
+# from prefect.tasks import task_input_hash
+
+from etl_common import read_AWS, write_AWS
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
@@ -91,38 +93,6 @@ def write_local(base_url: str, file_name: str, local_dir: pathlib.Path) -> pathl
         print(e, file_name)
 
 
-@task(
-    name="Write Data on AWS-S3",
-    log_prints=True,
-    # cache_key_fn=task_input_hash,
-    # cache_expiration=timedelta(days=1),
-)
-def write_AWS(local_path: str, remote_path: str, bucket_block: S3Bucket) -> None:
-    """Upload a local file to AWS-S3"""
-
-    try:
-        print("Upload to S3:", local_path, ">", remote_path)
-        bucket_block.upload_from_path(from_path=str(local_path), to_path=str(remote_path))
-
-    except Exception as e:
-        print(e, local_path)
-
-@task(
-    name="Read Data from AWS-S3",
-    log_prints=True,
-    # cache_key_fn=task_input_hash,
-    # cache_expiration=timedelta(days=1),
-)
-def read_AWS(remote_path: str, local_path: str, bucket_block: S3Bucket) -> None:
-    """Download a remote AWS-S3 file to local folder"""
-
-    try:
-        print("Download from S3:", remote_path, ">", local_path)
-        bucket_block.download_object_to_path(from_path=str(remote_path), to_path=str(local_path))
-
-    except Exception as e:
-        print(e, remote_path)
-
 
 def get_info(path):
 
@@ -166,7 +136,7 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
         files_tracker = pd.read_csv(files_tracker_path)
         files_tracker['present_in_last_update'] = False
     else:
-        columns = ['file_hash','file_name','file_creation_time','present_in_last_update']
+        columns = ['file_hash','file_name','file_creation_time','present_in_last_update', 'parsed', 'embedded', 'indexed']
         files_tracker = pd.DataFrame(columns=columns)
 
     for i, file_name in enumerate(files):
@@ -192,7 +162,7 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
             os.rename(tmp_path, local_path)
 
             file_creation_time = get_info(local_path)
-            new_row = {"file_hash":file_hash, "file_name":file_name, "file_creation_time":file_creation_time, "present_in_last_update":True}
+            new_row = {"file_hash":file_hash, "file_name":file_name, "file_creation_time":file_creation_time, "present_in_last_update":True, "parsed":False, "embedded":False, "indexed":False}
 
             files_tracker = pd.concat([files_tracker, pd.DataFrame([new_row])], ignore_index=True)
             write_AWS(local_path, local_path, bucket_block)
@@ -200,7 +170,7 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
         files_tracker.to_csv(files_tracker_path, index=False)
         write_AWS(files_tracker_path, files_tracker_path, bucket_block)
 
-        if i >= 3:
+        if i >= 1:
             break
 
 if __name__ == "__main__":
