@@ -183,9 +183,12 @@ def get_info(path: Path) -> Optional[str]:
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_web_to_aws_parent() -> None:
+def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
     """
     Prefect flow for collecting files from a source URL and uploading them to AWS S3.
+
+    Parameters:
+    - max_doc (int): The maximum number of documents to process
 
     Returns:
     None
@@ -262,7 +265,7 @@ def omdena_ungdc_etl_web_to_aws_parent() -> None:
         files_tracker.to_csv(files_tracker_path, index=False)
         write_AWS(files_tracker_path, files_tracker_path, bucket_block)
 
-        if i >= 1:
+        if max_doc is not None and i+1 >= max_doc:
             break
 
 

@@ -120,9 +120,12 @@ def parse_JSON(file_path: Path) -> None:
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_pdf_parsing_parent() -> None:
+def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
     """
     Prefect flow for orchestrating PDF parsing using IBM DeepSearch.
+
+    Parameters:
+    - max_doc (int): The maximum number of documents to process
 
     Returns:
     None
@@ -146,6 +149,7 @@ def omdena_ungdc_etl_pdf_parsing_parent() -> None:
     files_tracker = pd.read_csv(files_tracker_path)
 
     # Parse the collected files
+    i = 0
     for file in files_tracker.itertuples():
         if file.present_in_last_update is True and file.parsed is False:
             file_path = Path(local_dir, file.file_name)
@@ -161,8 +165,13 @@ def omdena_ungdc_etl_pdf_parsing_parent() -> None:
 
             # Update the files_tracker
             files_tracker.at[file.Index, "parsed"] = True
+
+            i += 1
         else:
             print(f"The last version of {file.file_name} has already been parsed")
+
+        if max_doc is not None and i >= max_doc:
+            break
 
     files_tracker.to_csv(files_tracker_path, index=False)
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
