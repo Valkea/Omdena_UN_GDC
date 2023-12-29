@@ -166,6 +166,7 @@ def parse_JSON(file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame
                 "file_hash": file_infos.file_hash,
                 "file_name": file_infos.file_name,
                 "page": item['prov'][0]['page'],
+                "level": None,
                 "type": ext_type,
                 "header": last_header,
                 "chunk": ext_text,
@@ -210,9 +211,15 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
     read_AWS(files_tracker_path, files_tracker_path, bucket_block)
     files_tracker = pd.read_csv(files_tracker_path)
 
-    columns = ['file_hash','file_name','page','type','header','chunk','bloc']
-    pd_chunks = pd.DataFrame(columns=columns)
+    # Define the file to save the chunks
     pd_chunk_path = Path(local_dir, "extracted_chunks.csv")
+    read_AWS(pd_chunk_path, pd_chunk_path, bucket_block)
+
+    if os.path.exists(pd_chunk_path):
+        pd_chunks = pd.read_csv(pd_chunk_path)
+    else:
+        columns = ['file_hash','file_name','page', 'level', 'type','header','chunk','bloc']
+        pd_chunks = pd.DataFrame(columns=columns)
 
     # Parse the collected files
     i = 0
@@ -243,6 +250,7 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
 
     files_tracker.to_csv(files_tracker_path, index=False)
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
+    write_AWS(pd_chunks, pd_chunks, bucket_block)
 
 
 if __name__ == "__main__":
