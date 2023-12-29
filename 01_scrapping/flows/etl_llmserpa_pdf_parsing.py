@@ -118,22 +118,24 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
         raise Exception("The source folder doesn't exist")
 
     files_tracker_path = Path(local_dir, "files_tracker.csv")
-    read_AWS(files_tracker_path, files_tracker_path, bucket_block)
+    if not os.path.exists(files_tracker_path):
+        read_AWS(files_tracker_path, files_tracker_path, bucket_block)
     files_tracker = pd.read_csv(files_tracker_path)
-
-    # Define LLMsherpa parser
-    llmsherpa_api = "https://readers.llmsherpa.com/api/document/developer/parseDocument?renderFormat=all"
-    pdf_reader = LayoutPDFReader(llmsherpa_api)
 
     # Define the file to save the chunks
     pd_chunk_path = Path(local_dir, "extracted_chunks.csv")
-    read_AWS(pd_chunk_path, pd_chunk_path, bucket_block)
+    if not os.path.exists(pd_chunk_path):
+        read_AWS(pd_chunk_path, pd_chunk_path, bucket_block)
 
     if os.path.exists(pd_chunk_path):
         pd_chunks = pd.read_csv(pd_chunk_path)
     else:
         columns = ['file_hash','file_name','page','level','type','header','chunk','bloc']
         pd_chunks = pd.DataFrame(columns=columns)
+
+    # Define LLMsherpa parser
+    llmsherpa_api = "https://readers.llmsherpa.com/api/document/developer/parseDocument?renderFormat=all"
+    pdf_reader = LayoutPDFReader(llmsherpa_api)
 
     # Iterate through files and parse PDF
     i = 0

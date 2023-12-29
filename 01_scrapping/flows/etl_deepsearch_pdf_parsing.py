@@ -208,12 +208,14 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
         raise Exception("The source folder doesn't exist")
 
     files_tracker_path = Path(local_dir, "files_tracker.csv")
-    read_AWS(files_tracker_path, files_tracker_path, bucket_block)
+    if not os.path.exists(files_tracker_path):
+        read_AWS(files_tracker_path, files_tracker_path, bucket_block)
     files_tracker = pd.read_csv(files_tracker_path)
 
     # Define the file to save the chunks
     pd_chunk_path = Path(local_dir, "extracted_chunks.csv")
-    read_AWS(pd_chunk_path, pd_chunk_path, bucket_block)
+    if not os.path.exists(pd_chunk_path):
+        read_AWS(pd_chunk_path, pd_chunk_path, bucket_block)
 
     if os.path.exists(pd_chunk_path):
         pd_chunks = pd.read_csv(pd_chunk_path)

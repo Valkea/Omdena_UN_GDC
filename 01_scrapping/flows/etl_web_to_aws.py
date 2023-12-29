@@ -209,7 +209,8 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
     files = get_files_uris(html_code, base_files)
 
     files_tracker_path = Path("data", "files_tracker.csv")
-    read_AWS(files_tracker_path, files_tracker_path, bucket_block)
+    if not os.path.exists(files_tracker_path):
+        read_AWS(files_tracker_path, files_tracker_path, bucket_block)
 
     if os.path.exists(files_tracker_path):
         files_tracker = pd.read_csv(files_tracker_path)
