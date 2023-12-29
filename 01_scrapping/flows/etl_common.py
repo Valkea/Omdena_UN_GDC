@@ -10,7 +10,9 @@ Functions:
 
 Note: Ensure that the 'prefect' and 'prefect_aws' packages are installed for proper execution.
 """
+import os
 
+import pandas as pd
 
 from prefect import flow, task
 from prefect_aws import S3Bucket
@@ -39,9 +41,14 @@ def read_AWS(remote_path: str, local_path: str, bucket_block: S3Bucket) -> None:
 
     try:
         print("Download from S3:", remote_path, ">", local_path)
-        bucket_block.download_object_to_path(
-            from_path=str(remote_path), to_path=str(local_path)
-        )
+        if os.path.isfile(remote_path):
+            bucket_block.download_object_to_path(
+                from_path=str(remote_path), to_path=str(local_path)
+            )
+        elif os.path.isdir(remote_path):
+            bucket_block.download_folder_to_path(
+                from_folder=str(remote_path), to_folder=str(local_path)
+            )
 
     except Exception as e:
         print(e, remote_path)
@@ -68,9 +75,14 @@ def write_AWS(local_path: str, remote_path: str, bucket_block: S3Bucket) -> None
 
     try:
         print("Upload to S3:", local_path, ">", remote_path)
-        bucket_block.upload_from_path(
-            from_path=str(local_path), to_path=str(remote_path)
-        )
+        if os.path.isfile(local_path):
+            bucket_block.upload_from_path(
+                from_path=str(local_path), to_path=str(remote_path)
+            )
+        elif os.path.isdir(local_path):
+            bucket_block.upload_from_folder(
+                from_folder=str(local_path), to_folder=str(remote_path)
+            )
 
     except Exception as e:
         print(e, local_path)
