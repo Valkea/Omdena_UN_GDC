@@ -24,6 +24,7 @@ from prefect import flow
 from etl_web_to_aws import omdena_ungdc_etl_web_to_aws_parent
 from etl_deepsearch_pdf_parsing import omdena_ungdc_etl_pdf_parsing_parent
 from etl_llmserpa_pdf_parsing import omdena_ungdc_etl_llmsherpa_pdf_parsing_parent
+from etl_embedding import omdena_ungdc_etl_embedding_parent
 
 
 @flow(log_prints=True)
@@ -40,12 +41,15 @@ def omdena_ungdc_etl_main_flow(max_doc:int = None) -> None:
 
     print("Call Web to AWS-S3")
     omdena_ungdc_etl_web_to_aws_parent(max_doc)
+    # Another source ?
 
     print("Call PDF parser")
     # omdena_ungdc_etl_pdf_parsing_parent(max_doc)
     omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
 
-    # Another source ?
+    print("Call Embedding & Indexing")
+    omdena_ungdc_etl_embedding_parent(max_doc)
+
 
 
 if __name__ == "__main__":
