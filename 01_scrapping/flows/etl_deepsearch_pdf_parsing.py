@@ -104,19 +104,81 @@ def extract_json(result_dir: str) -> Path:
     return json_file_path
 
 
+
 @task(name="Parse JSON", log_prints=True)
-def parse_JSON(file_path: Path) -> None:
+def parse_JSON(file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame) -> None:
     """
     Task to parse information from JSON files.
 
     Parameters:
     - file_path (Path): Path to the JSON file to be parsed.
+    - pd_chunks (pd.DataFrame): The pandas dataframe to store the extracted infos.
+    - file_infos (pd.DataFrame): The source file informations.
 
     Returns:
-    None
+    pd.DataFrame: The modified pandas dataframe.
     """
 
     print(f"ETL | PDF parsing | Task: Extracting infos from JSON {file_path}")
+
+    min_chunk_size = 5
+
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+
+    last_header = None
+    bloc_text = ""
+    bloc_indexes = []
+    last_index = pd_chunks.shape[0]
+    ext_text = ""
+
+    for item in data.get('main-text', []):
+
+
+        if item['name'] == 'subtitle-level-1' and item['type'] == 'subtitle-level-1':
+            last_header = item['text']
+
+            if bloc_text != "":
+                pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+                bloc_text = ""
+                bloc_indexes = []
+
+
+        elif item['name'] == 'list-item' and item['type'] == 'paragraph':
+            ext_text += item['text']
+            ext_type = "list-item"
+
+
+        elif item['name'] == 'text' and item['type'] == 'paragraph':
+            ext_text += item['text']
+            ext_type = "text"
+
+        if ext_text != "":
+
+            if len(ext_text) <= min_chunk_size:
+                continue
+
+            bloc_text += "\n"+ext_text
+            bloc_indexes.append(last_index)
+            last_index += 1
+
+            new_row = {
+                "file_hash": file_infos.file_hash,
+                "file_name": file_infos.file_name,
+                "page": item['prov'][0]['page'],
+                "type": ext_type,
+                "header": last_header,
+                "chunk": ext_text,
+                "bloc": "X"
+            }
+
+            pd_chunks = pd.concat([pd_chunks, pd.DataFrame([new_row])], ignore_index=True)
+            ext_text = ""
+
+    pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+
+    return pd_chunks
+
 
 
 @flow(log_prints=True)
@@ -148,10 +210,14 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
     read_AWS(files_tracker_path, files_tracker_path, bucket_block)
     files_tracker = pd.read_csv(files_tracker_path)
 
+    columns = ['file_hash','file_name','page','type','header','chunk','bloc']
+    pd_chunks = pd.DataFrame(columns=columns)
+    pd_chunk_path = Path(local_dir, "extracted_chunks.csv")
+
     # Parse the collected files
     i = 0
     for file in files_tracker.itertuples():
-        if file.present_in_last_update is True and file.parsed is False:
+        if file.present_in_last_update is True and file.parsed is False: # ⚠️ 
             file_path = Path(local_dir, file.file_name)
 
             # Parse PDF using IBM DeepSearch
@@ -161,7 +227,7 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
             json_file_path = extract_json(local_dir)
 
             # Extract interesting information from JSON file
-            parse_JSON(json_file_path)
+            pd_chunks = parse_JSON(json_file_path, pd_chunks, file)
 
             # Update the files_tracker
             files_tracker.at[file.Index, "parsed"] = True
@@ -172,6 +238,8 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
 
         if max_doc is not None and i >= max_doc:
             break
+
+    pd_chunks.to_csv(pd_chunk_path, index=False)
 
     files_tracker.to_csv(files_tracker_path, index=False)
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
