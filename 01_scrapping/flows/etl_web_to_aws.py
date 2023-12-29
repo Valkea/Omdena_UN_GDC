@@ -35,7 +35,7 @@ from typing import List, Tuple, Optional
 
 import pandas as pd
 
-from PyPDF2 import PdfReader
+# from PyPDF2 import PdfReader
 
 from prefect import flow, task
 from prefect_aws import S3Bucket
@@ -156,30 +156,30 @@ def write_local(
         print(e, file_name)
 
 
-def get_info(path: Path) -> Optional[str]:
-    """
-    Task to extract creation date information from a PDF file.
-
-    Parameters:
-    - path (Path): Path to the PDF file.
-
-    Returns:
-    Optional[str]: The creation date information.
-    """
-
-    with open(path, "rb") as f:
-        pdf = PdfReader(f)
-        info = pdf.metadata
-
-    # number_of_pages = len(pdf.pages)
-    # print(info)
-    # author = info.author
-    # creator = info.creator
-    # producer = info.producer
-    # subject = info.subject
-    # title = info.title
-
-    return info.creation_date
+# def get_info(path: Path) -> Optional[str]:
+#     """
+#     Task to extract creation date information from a PDF file.
+# 
+#     Parameters:
+#     - path (Path): Path to the PDF file.
+# 
+#     Returns:
+#     Optional[str]: The creation date information.
+#     """
+# 
+#     with open(path, "rb") as f:
+#         pdf = PdfReader(f)
+#         info = pdf.metadata
+# 
+#     # number_of_pages = len(pdf.pages)
+#     # print(info)
+#     # author = info.author
+#     # creator = info.creator
+#     # producer = info.producer
+#     # subject = info.subject
+#     # title = info.title
+# 
+#     return info.creation_date
 
 
 @flow(log_prints=True)
@@ -246,11 +246,11 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
 
             os.rename(tmp_path, local_path)
 
-            file_creation_time = get_info(local_path)
+            # file_creation_time = get_info(local_path)
             new_row = {
                 "file_hash": file_hash,
                 "file_name": file_name,
-                "file_creation_time": file_creation_time,
+                # "file_creation_time": file_creation_time,
                 "present_in_last_update": True,
                 "parsed": False,
                 "embedded": False,
