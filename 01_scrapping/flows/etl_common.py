@@ -28,10 +28,10 @@ from prefect_aws import S3Bucket
 )
 def read_AWS(remote_path: str, local_path: str, bucket_block: S3Bucket) -> None:
     """
-    Task to download a remote AWS-S3 file to a local folder.
+    Task to download a remote AWS-S3 file or folder to a local folder.
 
     Parameters:
-    - remote_path (str): The path to the remote file on AWS-S3.
+    - remote_path (str): The path to the remote file or folder on AWS-S3.
     - local_path (str): The path to the local folder where the file will be downloaded.
     - bucket_block (S3Bucket): The Prefect S3Bucket object representing the AWS-S3 bucket.
 
@@ -62,10 +62,10 @@ def read_AWS(remote_path: str, local_path: str, bucket_block: S3Bucket) -> None:
 )
 def write_AWS(local_path: str, remote_path: str, bucket_block: S3Bucket) -> None:
     """
-    Task to upload a local file to AWS-S3.
+    Task to upload a local file or folder to AWS-S3.
 
     Parameters:
-    - local_path (str): The path to the local file to be uploaded.
+    - local_path (str): The path to the local file or folder to be uploaded.
     - remote_path (str): The path to the remote location on AWS-S3.
     - bucket_block (S3Bucket): The Prefect S3Bucket object representing the AWS-S3 bucket.
 

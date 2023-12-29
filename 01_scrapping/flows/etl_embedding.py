@@ -1,7 +1,25 @@
 #! /usr/bin/env python3
 
 """
-TODO
+ETL Pipeline for Document Embedding and Indexing
+
+This script defines a Prefect flow for embedding document chunks using SentenceTransformer and
+indexing them in ChromaDB. The flow includes tasks for embedding chunks, inserting data into
+ChromaDB, and performing a query for testing.
+
+Tasks:
+- Embed chunks: Utilizes SentenceTransformer to embed document chunks.
+- Insert in VectorDatabase: Inserts embedded data into ChromaDB.
+- Query Test: Performs a query test on the inserted data.
+
+Prefect Flow:
+- omdena_ungdc_etl_embedding_parent: Orchestrates the embedding and indexing process for multiple files.
+  - Reads file information and extracted chunks from an AWS S3 bucket.
+  - Embeds the chunks using SentenceTransformer and inserts them into ChromaDB.
+  - Performs a query test on the indexed data.
+
+Note: Ensure that the 'prefect', 'prefect_aws', 'chromadb', and 'sentence_transformers' packages
+are installed for proper execution.
 """
 
 import os
@@ -21,6 +39,15 @@ from chromadb.utils import embedding_functions
 
 @task(name="Embed chunks", log_prints=True)
 def embed_chunks(data:list) -> list:
+    """
+    Task to embed document chunks using SentenceTransformer.
+
+    Parameters:
+    - data (list): List of document chunks.
+
+    Returns:
+    list: List of embeddings.
+    """
 
     embed_model = "all-MiniLM-L6-v2"
     documents=data['chunk'].values.tolist()
@@ -38,6 +65,17 @@ def embed_chunks(data:list) -> list:
 
 @task(name="Insert in VectorDatabase", log_prints=True)
 def populate_vectordb(collection:'Collection', embeddings:list, data:list):
+    """
+    Task to insert embedded data into ChromaDB.
+
+    Parameters:
+    - collection ('Collection'): ChromaDB collection.
+    - embeddings (list): List of embeddings.
+    - data (list): List of document chunks.
+
+    Returns:
+    None
+    """
 
     # Prepare Data for ChromaDB inserts
     documents=data['chunk'].values.tolist()
@@ -176,8 +214,7 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
     write_AWS(chroma_data_path, chroma_data_path, bucket_block)
 
-    print("@@@@@@@@@@@@@@@@@")
-    print(collection.count()) # returns the number of items in the collection
+    print("Num elements in the DB:", collection.count()) # returns the number of items in the collection
 
     query_test(collection)
 
