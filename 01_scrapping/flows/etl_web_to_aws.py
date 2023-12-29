@@ -262,11 +262,11 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
             )
             write_AWS(local_path, local_path, bucket_block)
 
-        files_tracker.to_csv(files_tracker_path, index=False)
-        write_AWS(files_tracker_path, files_tracker_path, bucket_block)
-
         if max_doc is not None and i+1 >= max_doc:
             break
+
+    files_tracker.to_csv(files_tracker_path, index=False)
+    write_AWS(files_tracker_path, files_tracker_path, bucket_block)
 
 
 if __name__ == "__main__":
