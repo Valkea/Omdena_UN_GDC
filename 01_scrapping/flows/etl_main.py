@@ -18,9 +18,8 @@ Prefect Flow:
 Note: Ensure that the necessary dependencies and packages are installed for proper execution.
 """
 
-import argparse
-
 from prefect import flow
+from etl_common import get_arguments
 from etl_web_to_aws import omdena_ungdc_etl_web_to_aws_parent
 from etl_deepsearch_pdf_parsing import omdena_ungdc_etl_pdf_parsing_parent
 from etl_llmserpa_pdf_parsing import omdena_ungdc_etl_llmsherpa_pdf_parsing_parent
@@ -54,13 +53,5 @@ def omdena_ungdc_etl_main_flow(max_doc:int = None) -> None:
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--max_doc', help="The max number of documents to process (for testing purpose)")
-    args = parser.parse_args()
-
-    max_doc = None
-    if args.max_doc:
-        max_doc = args.max_doc
-        print(f"Max document to process: {max_doc}")
-
+    max_doc = get_arguments()
     omdena_ungdc_etl_main_flow(max_doc)

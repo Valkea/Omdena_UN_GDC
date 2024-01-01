@@ -42,7 +42,7 @@ from prefect_aws import S3Bucket
 
 # from prefect.tasks import task_input_hash
 
-from etl_common import read_AWS, write_AWS
+from etl_common import read_AWS, write_AWS, get_arguments
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
@@ -271,4 +271,5 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
 
 
 if __name__ == "__main__":
-    omdena_ungdc_etl_web_to_aws_parent()
+    max_doc = get_arguments()
+    omdena_ungdc_etl_web_to_aws_parent(max_doc)

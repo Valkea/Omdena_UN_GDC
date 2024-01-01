@@ -31,7 +31,7 @@ from prefect import flow, task
 from prefect_aws import S3Bucket
 from prefect.utilities.annotations import quote
 
-from etl_common import read_AWS, write_AWS
+from etl_common import read_AWS, write_AWS, get_arguments
 
 import chromadb
 from chromadb.utils import embedding_functions
@@ -197,7 +197,6 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
             populate_vectordb(quote(collection), embeddings, doc_chunks)
             files_tracker.at[file.Index, "indexed"] = True
 
-            i += 1
         else:
             print(f"The last version of {file.file_name} has already been embeded and indexed")
 
@@ -207,6 +206,7 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
                 where={"file_hash": file.file_hash}
             )
 
+        i += 1
         if max_doc is not None and i >= max_doc:
             break
 
@@ -220,4 +220,5 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
 
 
 if __name__ == "__main__":
-    omdena_ungdc_etl_embedding_parent()
+    max_doc = get_arguments()
+    omdena_ungdc_etl_embedding_parent(max_doc)

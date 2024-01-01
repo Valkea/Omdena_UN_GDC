@@ -28,7 +28,7 @@ from llmsherpa.readers import LayoutPDFReader
 from prefect import flow, task
 from prefect_aws import S3Bucket
 
-from etl_common import read_AWS, write_AWS
+from etl_common import read_AWS, write_AWS, get_arguments
 # from llama_index import VectorStoreIndex
 
 
@@ -149,10 +149,10 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
             # Update the files_tracker
             files_tracker.at[file.Index, "parsed"] = True
 
-            i += 1
         else:
             print(f"The last version of {file.file_name} has already been parsed")
 
+        i += 1
         if max_doc is not None and i >= max_doc:
             break
 
@@ -164,5 +164,6 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
 
 
 if __name__ == "__main__":
-    omdena_ungdc_etl_llmsherpa_pdf_parsing_parent()
+    max_doc = get_arguments()
+    omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
 
