@@ -142,12 +142,15 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
     for file in files_tracker.itertuples():
         if file.present_in_last_update is True and file.parsed is False: # ⚠️ 
 
-            # Parse PDF using LLMsherpa
-            file_path = Path("data", file.file_name)
-            pd_chunks = parse_PDF(pdf_reader, file_path, pd_chunks, file)
+            try:
+                # Parse PDF using LLMsherpa
+                file_path = Path("data", file.file_name)
+                pd_chunks = parse_PDF(pdf_reader, file_path, pd_chunks, file)
 
-            # Update the files_tracker
-            files_tracker.at[file.Index, "parsed"] = True
+                # Update the files_tracker
+                files_tracker.at[file.Index, "parsed"] = True
+            except Exception as e:
+                print(f"A problem occured with PDF parsing on document {file_path}: \n{e}")
 
         else:
             print(f"The last version of {file.file_name} has already been parsed")
@@ -165,5 +168,8 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
 
 if __name__ == "__main__":
     max_doc = get_arguments()
-    omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
+    try:
+        omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
+    except Exception as e:
+        print(f"A problem occured with PDF parsing on document: \n{e}")
 
