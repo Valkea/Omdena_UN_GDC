@@ -23,7 +23,8 @@ from etl_common import get_arguments
 from etl_web_to_aws import omdena_ungdc_etl_web_to_aws_parent
 from etl_deepsearch_pdf_parsing import omdena_ungdc_etl_pdf_parsing_parent
 from etl_llmserpa_pdf_parsing import omdena_ungdc_etl_llmsherpa_pdf_parsing_parent
-from etl_embedding import omdena_ungdc_etl_embedding_parent
+# from etl_embedding_chromadb import omdena_ungdc_etl_embedding_parent
+from etl_embedding_weaviate import omdena_ungdc_etl_embedding_parent
 
 
 @flow(log_prints=True)
