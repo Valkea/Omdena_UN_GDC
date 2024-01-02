@@ -29,11 +29,17 @@ from prefect import flow, task
 from prefect_aws import S3Bucket
 
 from etl_common import read_AWS, write_AWS, get_arguments
+
 # from llama_index import VectorStoreIndex
 
 
 @task(name="LLMsherpa Parse PDF", log_prints=True)
-def parse_PDF(pdf_reader:LayoutPDFReader, file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame):
+def parse_PDF(
+    pdf_reader: LayoutPDFReader,
+    file_path: Path,
+    pd_chunks: pd.DataFrame,
+    file_infos: pd.DataFrame,
+):
     """
     Task to parse PDF documents using llmsherpa API.
 
@@ -55,21 +61,20 @@ def parse_PDF(pdf_reader:LayoutPDFReader, file_path: Path, pd_chunks: pd.DataFra
     index = pd_chunks.shape[0]
 
     for j, chunk in enumerate(doc.chunks()):
-
         # header = chunk.parent.to_text()
-        header = chunk.to_context_text().split('\n')[0]
+        header = chunk.to_context_text().split("\n")[0]
         page = chunk.page_idx
         level = chunk.level
         text = chunk.to_text()
         text_w_context = chunk.to_context_text()
-        text_w_context_clean = text_w_context.replace(header or "", '')
+        text_w_context_clean = text_w_context.replace(header or "", "")
 
         if header is None:
             text = text_w_context_clean
 
         new_line = {
             "file_hash": file_infos.file_hash,
-            'file_name':os.path.split(file_path)[-1],
+            "file_name": os.path.split(file_path)[-1],
             "page": page,
             "level": level,
             "type": None,
@@ -78,10 +83,12 @@ def parse_PDF(pdf_reader:LayoutPDFReader, file_path: Path, pd_chunks: pd.DataFra
             "bloc": "X"
             # "header_chunk": chunk.to_context_text(),
         }
-        pd_chunks = pd.concat([pd_chunks, pd.DataFrame([new_line])], axis='index', ignore_index=True)
+        pd_chunks = pd.concat(
+            [pd_chunks, pd.DataFrame([new_line])], axis="index", ignore_index=True
+        )
 
         if old_header != header:
-            pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+            pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text
             old_header = header
             bloc_text = text_w_context_clean
             bloc_indexes = []
@@ -91,14 +98,14 @@ def parse_PDF(pdf_reader:LayoutPDFReader, file_path: Path, pd_chunks: pd.DataFra
         bloc_indexes.append(index)
         index += 1
 
-        if j == len(doc.chunks())-1:
-            pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+        if j == len(doc.chunks()) - 1:
+            pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text
 
     return pd_chunks
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
+def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc: int = None) -> None:
     """
     Prefect flow for orchestrating PDF parsing using llmsherpa.
 
@@ -130,7 +137,16 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
     if os.path.exists(pd_chunk_path):
         pd_chunks = pd.read_csv(pd_chunk_path)
     else:
-        columns = ['file_hash','file_name','page','level','type','header','chunk','bloc']
+        columns = [
+            "file_hash",
+            "file_name",
+            "page",
+            "level",
+            "type",
+            "header",
+            "chunk",
+            "bloc",
+        ]
         pd_chunks = pd.DataFrame(columns=columns)
 
     # Define LLMsherpa parser
@@ -140,8 +156,7 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
     # Iterate through files and parse PDF
     i = 0
     for file in files_tracker.itertuples():
-        if file.present_in_last_update is True and file.parsed is False: # ⚠️ 
-
+        if file.present_in_last_update is True and file.parsed is False:  # ⚠️
             try:
                 # Parse PDF using LLMsherpa
                 file_path = Path("data", file.file_name)
@@ -150,7 +165,9 @@ def omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc:int = None) -> None:
                 # Update the files_tracker
                 files_tracker.at[file.Index, "parsed"] = True
             except Exception as e:
-                print(f"A problem occured with PDF parsing on document {file_path}: \n{e}")
+                print(
+                    f"A problem occured with PDF parsing on document {file_path}: \n{e}"
+                )
 
         else:
             print(f"The last version of {file.file_name} has already been parsed")
@@ -172,4 +189,3 @@ if __name__ == "__main__":
         omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
     except Exception as e:
         print(f"A problem occured with PDF parsing on document: \n{e}")
-

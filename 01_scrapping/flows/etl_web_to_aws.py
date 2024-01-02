@@ -159,18 +159,18 @@ def write_local(
 # def get_info(path: Path) -> Optional[str]:
 #     """
 #     Task to extract creation date information from a PDF file.
-# 
+#
 #     Parameters:
 #     - path (Path): Path to the PDF file.
-# 
+#
 #     Returns:
 #     Optional[str]: The creation date information.
 #     """
-# 
+#
 #     with open(path, "rb") as f:
 #         pdf = PdfReader(f)
 #         info = pdf.metadata
-# 
+#
 #     # number_of_pages = len(pdf.pages)
 #     # print(info)
 #     # author = info.author
@@ -178,12 +178,12 @@ def write_local(
 #     # producer = info.producer
 #     # subject = info.subject
 #     # title = info.title
-# 
+#
 #     return info.creation_date
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
+def omdena_ungdc_etl_web_to_aws_parent(max_doc: int = None) -> None:
     """
     Prefect flow for collecting files from a source URL and uploading them to AWS S3.
 
@@ -228,7 +228,6 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
         files_tracker = pd.DataFrame(columns=columns)
 
     for i, file_name in enumerate(files):
-
         local_path, tmp_path, file_hash = write_local(base_files, file_name, local_dir)
 
         if file_hash in files_tracker["file_hash"].values:
@@ -263,7 +262,7 @@ def omdena_ungdc_etl_web_to_aws_parent(max_doc:int = None) -> None:
             )
             write_AWS(local_path, local_path, bucket_block)
 
-        if max_doc is not None and i+1 >= max_doc:
+        if max_doc is not None and i + 1 >= max_doc:
             break
 
     files_tracker.to_csv(files_tracker_path, index=False)

@@ -275,7 +275,7 @@ def omdena_ungdc_etl_embedding_parent(max_doc: int = None) -> None:
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
     # write_AWS(chroma_data_path, chroma_data_path, bucket_block)
 
-    # Query 
+    # Query
     query_test(client, collection_name)
 
     # Check VectorDB content

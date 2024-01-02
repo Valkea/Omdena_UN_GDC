@@ -23,12 +23,13 @@ from etl_common import get_arguments
 from etl_web_to_aws import omdena_ungdc_etl_web_to_aws_parent
 from etl_deepsearch_pdf_parsing import omdena_ungdc_etl_pdf_parsing_parent
 from etl_llmserpa_pdf_parsing import omdena_ungdc_etl_llmsherpa_pdf_parsing_parent
+
 # from etl_embedding_chromadb import omdena_ungdc_etl_embedding_parent
 from etl_embedding_weaviate import omdena_ungdc_etl_embedding_parent
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_main_flow(max_doc:int = None) -> None:
+def omdena_ungdc_etl_main_flow(max_doc: int = None) -> None:
     """
     The base flow that sequentially calls the other scripts/flows.
 
@@ -51,8 +52,6 @@ def omdena_ungdc_etl_main_flow(max_doc:int = None) -> None:
     omdena_ungdc_etl_embedding_parent(max_doc)
 
 
-
 if __name__ == "__main__":
-
     max_doc = get_arguments()
     omdena_ungdc_etl_main_flow(max_doc)

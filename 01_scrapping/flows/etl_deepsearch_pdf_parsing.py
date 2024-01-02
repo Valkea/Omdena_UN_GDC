@@ -104,9 +104,10 @@ def extract_json(result_dir: str) -> Path:
     return json_file_path
 
 
-
 @task(name="Parse JSON", log_prints=True)
-def parse_JSON(file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame) -> None:
+def parse_JSON(
+    file_path: Path, pd_chunks: pd.DataFrame, file_infos: pd.DataFrame
+) -> None:
     """
     Task to parse information from JSON files.
 
@@ -123,7 +124,7 @@ def parse_JSON(file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame
 
     min_chunk_size = 5
 
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         data = json.load(file)
 
     last_header = None
@@ -132,58 +133,54 @@ def parse_JSON(file_path: Path, pd_chunks: pd.DataFrame, file_infos:pd.DataFrame
     last_index = pd_chunks.shape[0]
     ext_text = ""
 
-    for item in data.get('main-text', []):
-
-
-        if item['name'] == 'subtitle-level-1' and item['type'] == 'subtitle-level-1':
-            last_header = item['text']
+    for item in data.get("main-text", []):
+        if item["name"] == "subtitle-level-1" and item["type"] == "subtitle-level-1":
+            last_header = item["text"]
 
             if bloc_text != "":
-                pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+                pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text
                 bloc_text = ""
                 bloc_indexes = []
 
-
-        elif item['name'] == 'list-item' and item['type'] == 'paragraph':
-            ext_text += item['text']
+        elif item["name"] == "list-item" and item["type"] == "paragraph":
+            ext_text += item["text"]
             ext_type = "list-item"
 
-
-        elif item['name'] == 'text' and item['type'] == 'paragraph':
-            ext_text += item['text']
+        elif item["name"] == "text" and item["type"] == "paragraph":
+            ext_text += item["text"]
             ext_type = "text"
 
         if ext_text != "":
-
             if len(ext_text) <= min_chunk_size:
                 continue
 
-            bloc_text += "\n"+ext_text
+            bloc_text += "\n" + ext_text
             bloc_indexes.append(last_index)
             last_index += 1
 
             new_row = {
                 "file_hash": file_infos.file_hash,
                 "file_name": file_infos.file_name,
-                "page": item['prov'][0]['page'],
+                "page": item["prov"][0]["page"],
                 "level": None,
                 "type": ext_type,
                 "header": last_header,
                 "chunk": ext_text,
-                "bloc": "X"
+                "bloc": "X",
             }
 
-            pd_chunks = pd.concat([pd_chunks, pd.DataFrame([new_row])], ignore_index=True)
+            pd_chunks = pd.concat(
+                [pd_chunks, pd.DataFrame([new_row])], ignore_index=True
+            )
             ext_text = ""
 
-    pd_chunks.loc[bloc_indexes, 'bloc'] = bloc_text
+    pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text
 
     return pd_chunks
 
 
-
 @flow(log_prints=True)
-def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
+def omdena_ungdc_etl_pdf_parsing_parent(max_doc: int = None) -> None:
     """
     Prefect flow for orchestrating PDF parsing using IBM DeepSearch.
 
@@ -220,13 +217,22 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc:int = None) -> None:
     if os.path.exists(pd_chunk_path):
         pd_chunks = pd.read_csv(pd_chunk_path)
     else:
-        columns = ['file_hash','file_name','page', 'level', 'type','header','chunk','bloc']
+        columns = [
+            "file_hash",
+            "file_name",
+            "page",
+            "level",
+            "type",
+            "header",
+            "chunk",
+            "bloc",
+        ]
         pd_chunks = pd.DataFrame(columns=columns)
 
     # Parse the collected files
     i = 0
     for file in files_tracker.itertuples():
-        if file.present_in_last_update is True and file.parsed is False: # ⚠️ 
+        if file.present_in_last_update is True and file.parsed is False:  # ⚠️
             file_path = Path(local_dir, file.file_name)
 
             # Parse PDF using IBM DeepSearch

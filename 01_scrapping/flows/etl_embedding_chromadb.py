@@ -38,7 +38,7 @@ from chromadb.utils import embedding_functions
 
 
 @task(name="Embed chunks", log_prints=True)
-def embed_chunks(data:list) -> list:
+def embed_chunks(data: list) -> list:
     """
     Task to embed document chunks using SentenceTransformer.
 
@@ -50,7 +50,7 @@ def embed_chunks(data:list) -> list:
     """
 
     embed_model = "all-MiniLM-L6-v2"
-    documents=data['chunk'].values.tolist()
+    documents = data["chunk"].values.tolist()
 
     embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=embed_model
@@ -62,9 +62,8 @@ def embed_chunks(data:list) -> list:
     return embeddings
 
 
-
 @task(name="Insert in VectorDatabase", log_prints=True)
-def populate_vectordb(collection:'Collection', embeddings:list, data:list):
+def populate_vectordb(collection: "Collection", embeddings: list, data: list):
     """
     Task to insert embedded data into ChromaDB.
 
@@ -78,49 +77,42 @@ def populate_vectordb(collection:'Collection', embeddings:list, data:list):
     """
 
     # Prepare Data for ChromaDB inserts
-    documents=data['chunk'].values.tolist()
+    documents = data["chunk"].values.tolist()
     # indexes=[f"id{i}" for i in data.index]
-    indexes=[f"{i}_{j}" for i, j in zip(data.file_hash, data.index)]
+    indexes = [f"{i}_{j}" for i, j in zip(data.file_hash, data.index)]
 
-    meta_columns = ['file_hash', 'file_name', 'page', 'level', 'type', 'header']
+    meta_columns = ["file_hash", "file_name", "page", "level", "type", "header"]
     metadatas = []
     for i, item in data.iterrows():
-        metadict = {c:item[c] for c in meta_columns}
+        metadict = {c: item[c] for c in meta_columns}
         metadatas.append(metadict)
 
     # Insert data
     # collection.add(
     collection.upsert(
-        embeddings=embeddings,
-        documents=documents,
-        ids=indexes,
-        metadatas=metadatas
+        embeddings=embeddings, documents=documents, ids=indexes, metadatas=metadatas
     )
 
-    print(collection.peek(1)) # returns a list of the first 10 items in the collection
-    print(collection.count()) # returns the number of items in the collection
+    print(collection.peek(1))  # returns a list of the first 10 items in the collection
+    print(collection.count())  # returns the number of items in the collection
 
 
-def query_test(collection:'Collection'):
-
+def query_test(collection: "Collection"):
     query_results = collection.query(
-            query_texts=["Tell me about sustainability by design"],
-            n_results=10,
+        query_texts=["Tell me about sustainability by design"],
+        n_results=10,
     )
 
     distances = query_results["distances"][0]
     for i, dist in enumerate(distances):
         if dist < 0.5:
-
-            print("TXT:",query_results["documents"][0][i])
+            print("TXT:", query_results["documents"][0][i])
             print("ID:", query_results["ids"][0][i])
             print("DISTANCE:", query_results["distances"][0][i])
             print("METADATAS:", query_results["metadatas"][0][i])
             print("***************")
         else:
             print("DISTANCE:", query_results["distances"][0][i])
-
-
 
     print("KEYS:", query_results.keys())
     # print("TXTS:",query_results["documents"])
@@ -130,7 +122,7 @@ def query_test(collection:'Collection'):
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
+def omdena_ungdc_etl_embedding_parent(max_doc: int = None) -> None:
     """
     Prefect flow for orchestrating document Embedding and Indexing
 
@@ -177,17 +169,13 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
     # Iterate through files and embed the associated chunks
     i = 0
     for file in files_tracker.itertuples():
-
         # Check if the chunks of this file are alredy in the DB
-        r = collection.get(
-                where={'file_hash':file.file_hash}
-        )
+        r = collection.get(where={"file_hash": file.file_hash})
 
         # Encode and inject them if they are not in the DB
-        if len(r['ids']) == 0 and file.present_in_last_update is True:
-
+        if len(r["ids"]) == 0 and file.present_in_last_update is True:
             # Select chunks
-            doc_chunks = data[ data['file_hash'] == file.file_hash]
+            doc_chunks = data[data["file_hash"] == file.file_hash]
 
             # Compute embeddings
             embeddings = embed_chunks(doc_chunks)
@@ -198,13 +186,13 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
             files_tracker.at[file.Index, "indexed"] = True
 
         else:
-            print(f"The last version of {file.file_name} has already been embeded and indexed")
+            print(
+                f"The last version of {file.file_name} has already been embeded and indexed"
+            )
 
         # Delete the chunks if they exist but the document was removed
         if file.present_in_last_update is False:
-            collection.delete(
-                where={"file_hash": file.file_hash}
-            )
+            collection.delete(where={"file_hash": file.file_hash})
 
         i += 1
         if max_doc is not None and i >= max_doc:
@@ -214,7 +202,9 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
     write_AWS(chroma_data_path, chroma_data_path, bucket_block)
 
-    print("Num elements in the DB:", collection.count()) # returns the number of items in the collection
+    print(
+        "Num elements in the DB:", collection.count()
+    )  # returns the number of items in the collection
 
     query_test(collection)
 

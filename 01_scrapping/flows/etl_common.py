@@ -97,7 +97,11 @@ def get_arguments() -> str:
     str: The value of the 'max_doc' argument if provided, otherwise None.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--max_doc', help="The max number of documents to process (for testing purpose)")
+    parser.add_argument(
+        "-m",
+        "--max_doc",
+        help="The max number of documents to process (for testing purpose)",
+    )
     args = parser.parse_args()
 
     max_doc = None
@@ -106,4 +110,3 @@ def get_arguments() -> str:
         print(f"Max document to process: {max_doc}")
 
     return max_doc
-
