@@ -2,11 +2,30 @@
 
 """
 ETL Pipeline for Document Embedding and Indexing
+
+This script defines the Prefect flow for orchestrating document embedding and indexing.
+
+Functions:
+- initialize_vectordb: Function to initialize the Vector Database for document embedding.
+- add_object: Function to add an object to the Vector Database.
+- populate_vectordb: Task to populate the Vector Database with document information.
+- query_test: Task to perform a test query on the Vector Database.
+
+Flow:
+- omdena_ungdc_etl_embedding_parent: Prefect flow for orchestrating document embedding and indexing.
+  - Initializes the Vector Database.
+  - Populates the Vector Database with document information.
+  - Performs a test query on the Vector Database.
+
+Parameters:
+- max_doc (int): The maximum number of documents to process.
+
+Returns:
+None
 """
 
 import os
 import json
-import requests
 from pathlib import Path
 
 import numpy as np
@@ -16,25 +35,26 @@ from prefect import flow, task
 from prefect_aws import S3Bucket
 from prefect.utilities.annotations import quote
 
-from etl_common import read_AWS, write_AWS, get_arguments
-
 import weaviate
 
+from etl_common import read_AWS, write_AWS, get_arguments
+
+
 @task(name="Initialize VectorDatabase", log_prints=True)
-def initialize_vectordb(collection_name):
+def initialize_vectordb(collection_name: str) -> weaviate.Client:
     """
-    TODO
+    Function to initialize the Vector Database for document embedding & indexing.
 
     Parameters:
-        TODO
+    - collection_name (str): The name of the collection in the Vector Database.
 
     Returns:
-    TODO
+    weaviate.Client: The initialized Vector Database client.
     """
 
-    # Get the existing vectordb or create it
-
-    client = weaviate.Client(url = "http://0.0.0.0:8080")
+    client = weaviate.Client(
+        url="http://0.0.0.0:8080"
+    )  # Needs a Docker instance of Weaviate
 
     try:
         class_obj = {
@@ -46,7 +66,7 @@ def initialize_vectordb(collection_name):
                 "text2vec-transformers": {},
                 "generative-openai": {}
                 # Ensure the `generative-openai` module is used for generative queries
-            }
+            },
         }
 
         # client.schema.delete_class("Question")  # ⚠️
@@ -56,23 +76,25 @@ def initialize_vectordb(collection_name):
 
     return client
 
-def add_object(collection_name, client, obj) -> None:
+
+def add_object(collection_name: str, client: weaviate.Client, obj: dict) -> None:
     """
-    TODO
+    Function to add an object to the Vector Database.
+    This is a sub-function of the populate_vectordb Task.
 
     Parameters:
-        TODO
+    - collection_name (str): The name of the collection in the Vector Database.
+    - client (weaviate.Client): The Vector Database client.
+    - obj (dict): The object to be added to the Vector Database.
 
     Returns:
-    TODO
+    None
     """
 
     global counter
     print_interval = 20
 
     properties = {
-        # "question": obj["Question"],
-        # "answer": obj["Answer"],
         "file_hash": obj["file_hash"],
         "file_name": obj["file_name"],
         "page": obj["page"],
@@ -80,10 +102,9 @@ def add_object(collection_name, client, obj) -> None:
         "type": obj["type"],
         "header": obj["header"],
         "chunk": obj["chunk"],
-        # "chunk": obj["chunk"],
     }
 
-    client.batch.configure(batch_size=100)  # Configure batch
+    client.batch.configure(batch_size=100)
     with client.batch as batch:
         # Add the object to the batch
         batch.add_data_object(
@@ -98,16 +119,27 @@ def add_object(collection_name, client, obj) -> None:
         if counter % print_interval == 0:
             print(f"Imported {counter} articles...")
 
-@task(name="Insert in VectorDatabase", log_prints=True)
-def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
+
+@task(name="Populate VectorDatabase", log_prints=True)
+def populate_vectordb(
+    collection_name: str,
+    client: weaviate.Client,
+    files_tracker: pd.DataFrame,
+    data: pd.DataFrame,
+    max_doc: int,
+) -> None:
     """
-    TODO
+    Task to populate the Vector Database with document information.
 
     Parameters:
-        TODO
+    - collection_name (str): The name of the collection in the Vector Database.
+    - client (weaviate.Client): The Vector Database client.
+    - files_tracker (pd.DataFrame): DataFrame containing file tracking information.
+    - data (pd.DataFrame): DataFrame containing document information.
+    - max_doc (int): The maximum number of documents to process.
 
     Returns:
-    TODO
+    None
     """
 
     global counter
@@ -116,7 +148,7 @@ def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
     for file in files_tracker.itertuples():
         print(f"Dealing with {file.file_name}")
 
-        doc_chunks = data[ data['file_hash'] == file.file_hash]
+        doc_chunks = data[data["file_hash"] == file.file_hash]
 
         where = {
             "path": ["file_hash"],
@@ -126,16 +158,16 @@ def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
 
         # Check if file_hash si already in the VectorDB
         r = (
-            client.query
-            .get(collection_name, ["file_hash"])
+            client.query.get(collection_name, ["file_hash"])
             .with_limit(10000)
             .with_additional(["distance"])
             .with_where(where)
             .do()
         )
         # print(json.dumps(r, indent=4))
+
         try:
-            num_chunks_db = len(r['data']['Get'][collection_name])
+            num_chunks_db = len(r["data"]["Get"][collection_name])
         except KeyError:
             num_chunks_db = 0
 
@@ -143,13 +175,10 @@ def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
 
         # Delete the previous entries
         if len(doc_chunks) != num_chunks_db and num_chunks_db > 0:
-
             print(f"Deleting {num_chunks_db} entries")
 
             del_result = client.batch.delete_objects(
-              class_name=collection_name,
-              where=where,
-              dry_run=False
+                class_name=collection_name, where=where, dry_run=False
             )
             num_chunks_db = 0
 
@@ -160,12 +189,13 @@ def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
                 add_object(collection_name, client, row)
 
         else:
-            print(f"The last version of {file.file_name} has already been embeded and indexed")
+            print(
+                f"The last version of {file.file_name} has already been embedded and indexed"
+            )
 
         i += 1
         if max_doc is not None and i >= max_doc:
             break
-
 
     # Check VectorDB content
     classes = [d["class"] for d in client.schema.get()["classes"]]
@@ -175,16 +205,26 @@ def populate_vectordb(collection_name, client, files_tracker, data, max_doc):
         print(f"Num elements in [{class_name}]: {class_size['data']}")
 
 
+@task(name="Test Query VectorDatabase", log_prints=True)
+def query_test(client: weaviate.Client, collection_name: str) -> None:
+    """
+    Task to perform a test query on the Vector Database.
 
-def query_test(client, collection_name:str):
+    Parameters:
+    - client (weaviate.Client): The Vector Database client.
+    - collection_name (str): The name of the collection in the Vector Database.
 
-    query_texts="Tell me about sustainability by design"
-    # query_texts="sustainability"
-    # query_texts = "Bob"
+    Returns:
+    None
+    """
+
+    query_texts = "Tell me about sustainability by design"
 
     response = (
-        client.query
-        .get(collection_name, ["file_hash", "file_name", "page", "type", "header", "chunk",])
+        client.query.get(
+            collection_name,
+            ["file_hash", "file_name", "page", "type", "header", "chunk"],
+        )
         .with_limit(10)
         .with_near_text({"concepts": query_texts})
         .with_additional(["distance", "certainty", "id"])
@@ -194,23 +234,19 @@ def query_test(client, collection_name:str):
     print(json.dumps(response, indent=4))
 
 
-
 @flow(log_prints=True)
-def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
+def omdena_ungdc_etl_embedding_parent(max_doc: int = None) -> None:
     """
-    Prefect flow for orchestrating document Embedding and Indexing
+    Prefect flow for orchestrating document Embedding and Indexing.
 
     Parameters:
-    - max_doc (int): The maximum number of documents to process
+    - max_doc (int): The maximum number of documents to process.
 
     Returns:
     None
     """
 
     print("ETL | Embedding & Indexing")
-
-
-
 
     # Get the list of files to ingest
     bucket_block = S3Bucket.load("omdena-un-gdc-bucket")
@@ -237,9 +273,7 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
 
     files_tracker.to_csv(files_tracker_path, index=False)
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
-
     # write_AWS(chroma_data_path, chroma_data_path, bucket_block)
-
 
     # Query 
     query_test(client, collection_name)
@@ -251,7 +285,7 @@ def omdena_ungdc_etl_embedding_parent(max_doc:int = None) -> None:
         class_size = client.query.aggregate(class_name).with_meta_count().do()
         print(f"Num elements in [{class_name}]: {class_size['data']}")
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     max_doc = get_arguments()
     omdena_ungdc_etl_embedding_parent(max_doc)
