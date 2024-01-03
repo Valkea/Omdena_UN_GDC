@@ -273,7 +273,9 @@ def omdena_ungdc_etl_embedding_parent(max_doc: int = None) -> None:
 
     files_tracker.to_csv(files_tracker_path, index=False)
     write_AWS(files_tracker_path, files_tracker_path, bucket_block)
-    # write_AWS(chroma_data_path, chroma_data_path, bucket_block)
+
+    weaviate_db_path = Path(local_dir, "weaviate_data")
+    write_AWS(weaviate_db_path, weaviate_db_path, bucket_block)
 
     # Query
     query_test(client, collection_name)
