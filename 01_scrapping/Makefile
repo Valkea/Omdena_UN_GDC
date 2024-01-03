@@ -2,7 +2,7 @@
 PROJECT_ID = "omdena-un-gdc"
 
 setup_prefect_blocks:
-	@echo "Initialiaze prefect blocks"
+	@echo "Initialize prefect blocks"
 	python setup_prefect.py ${PROJECT_ID}
 
 setup_prefect_deployment:
