@@ -174,7 +174,7 @@ def parse_JSON(
             )
             ext_text = ""
 
-    pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text
+    # pd_chunks.loc[bloc_indexes, "bloc"] = bloc_text # ⚠️  deactivated to reduce the size of the CSV
 
     return pd_chunks
 
