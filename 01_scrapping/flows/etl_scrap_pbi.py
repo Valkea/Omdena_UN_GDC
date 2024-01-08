@@ -14,15 +14,19 @@
 import requests
 import pandas as pd
 
+from prefect import flow, task
+
 from json_to_csv import extract
 
 
+@task(name="Scrap page 1", log_prints=True)
 def page_1_scraping(api_url, payload, headers):
-    print(">>> page_1_scraping")
+    print(">>> MAIN TABLE")
     table_data = requests.post(api_url, json=payload, headers=headers).json()
     return extract(table_data, "output_file.csv")
 
 
+@task(name="Scrap page 2", log_prints=True)
 def page_2_scraping(api_url, payload_p2, headers, df):
     """
     Input Parameters - query_payload to retrieve the Core Principles
@@ -61,7 +65,7 @@ def page_2_scraping(api_url, payload_p2, headers, df):
 
     # POPULATE TOPICS
     for topic in topics:
-        print(">>> TOPICS:", topic)
+        print(">>> TOPIC:", topic)
         clean_topic = topic.replace(" ", "_").replace("/", "_")
 
         query_df = send_query_w_topic(api_url, payload_p2, headers, topic)
@@ -85,6 +89,8 @@ def page_2_scraping(api_url, payload_p2, headers, df):
         df = left.join(right, how="left", lsuffix="", rsuffix=f"__{clean_topic}")
 
     else:
+
+        print(">>> PROCESS DESCRIPTION")
         # Merge the `Process description` column on the last call
         left = df.set_index("Record ID", drop=False)
 
@@ -96,16 +102,8 @@ def page_2_scraping(api_url, payload_p2, headers, df):
     return df
 
 
-if __name__ == "__main__":
-    # API and Payload Instatiation
-    # It can be collected from the Network/XHR component while inspecting the webpage.
-
-    # api url copied form the Headers section of Network>XHR
-    api_url = "https://wabi-north-europe-j-primary-api.analysis.windows.net/public/reports/querydata?synchronous=true"
-    headers = {
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "X-Powerbi-Resourcekey": "84db278f-178b-4a18-a0db-3e57e8113b1f",
-    }
+@flow(log_prints=True)
+def omdena_ungdc_etl_scrap_pbi_parent() -> None:
 
     # payload for tables and second page sections
     payload_p1 = {
@@ -512,11 +510,19 @@ if __name__ == "__main__":
         "modelId": 933989,
     }
 
-    print(">>> STEP 1")
+    # api url copied form the Headers section of Network>XHR
+    api_url = "https://wabi-north-europe-j-primary-api.analysis.windows.net/public/reports/querydata?synchronous=true"
+    headers = {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "X-Powerbi-Resourcekey": "84db278f-178b-4a18-a0db-3e57e8113b1f",
+    }
+
+    ##### START SCRAPING P1 #####
+
     df = page_1_scraping(api_url, payload_p1, headers)
 
-    # SET RECORD IDS
-    print(">>> STEP 2")
+    ##### SET RECORD IDS #####
+
     record_id = df["Record ID"].tolist()
     ids = [
         [
@@ -528,8 +534,13 @@ if __name__ == "__main__":
         "SemanticQueryDataShapeCommand"
     ]["Query"]["Where"][1]["Condition"]["In"]["Values"] = ids
 
-    print(">>> STEP 3")
+    ##### START SCRAPING P2 #####
+
     df = page_2_scraping(api_url, payload_p2, headers, df)
     df.to_csv("df.csv", index=False)
 
     print("Scrapping completed")
+
+
+if __name__ == "__main__":
+    omdena_ungdc_etl_scrap_pbi_parent()
