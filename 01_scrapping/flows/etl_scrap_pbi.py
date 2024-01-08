@@ -36,10 +36,15 @@ None
 """
 
 import requests
+from pathlib import Path
 from typing import Dict, Any
 
-import pandas as pd
 from prefect import flow, task
+from prefect_aws import S3Bucket
+
+from etl_common import write_AWS
+
+import pandas as pd
 from json_to_csv import extract
 
 
@@ -548,10 +553,17 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
 
     ##### START SCRAPING P2 #####
 
+    local_dir = "data"
+    export_path = Path(local_dir, "powerBI.csv")
     df = page_2_scraping(api_url, payload_p2, headers, df)
-    df.to_csv("df.csv", index=False)
+    df.to_csv(export_path, index=False)
 
     print("Scrapping completed")
+
+
+    #### SAVE FILE TO AWS S3 #####
+    bucket_block = S3Bucket.load("omdena-un-gdc-bucket")
+    write_AWS(export_path, export_path, bucket_block)
 
 
 if __name__ == "__main__":
