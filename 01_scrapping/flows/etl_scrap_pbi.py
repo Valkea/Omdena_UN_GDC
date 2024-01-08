@@ -51,37 +51,27 @@ def page_2_scraping(api_url, payload_p2, headers, df):
         "Regulation of AI",
     ]
 
-    # UPDATE AND SEND QUERY
-    def send_query_w_topic(api_url, query_payload, headers, topic):
-        query_payload["queries"][0]["Query"]["Commands"][0][
-            "SemanticQueryDataShapeCommand"
-        ]["Query"]["Where"][0]["Condition"]["In"]["Values"][0][0]["Literal"][
-            "Value"
-        ] = f"'{topic}'"
-
-        r = requests.post(api_url, json=query_payload, headers=headers).json()
-
-        return extract(r, f"output_file_{topic[:10]}.csv")
-
     # POPULATE TOPICS
     for topic in topics:
         print(">>> TOPIC:", topic)
         clean_topic = topic.replace(" ", "_").replace("/", "_")
 
-        query_df = send_query_w_topic(api_url, payload_p2, headers, topic)
+        payload_p2["queries"][0]["Query"]["Commands"]\
+                [0]["SemanticQueryDataShapeCommand"]["Query"]\
+                ["Where"][0]["Condition"]["In"]["Values"]\
+                [0][0]["Literal"]["Value"] = f"'{topic}'"
+
+        result = requests.post(api_url, json=payload_p2, headers=headers).json()
+        query_df = extract(result, f"output_file_{topic[:10]}.csv")
 
         # Merge the `Core Principles` and `Commitments, pledges or actions` columns with the existing DF
-        tmp_df = query_df.loc[
-            :, ["Record ID", "Core Principles", "Commitments, pledges or actions"]
-        ]
-        tmp_df.rename(
-            columns={"Core Principles": f"Core_Principle__{clean_topic}"}, inplace=True
-        )
+        cols = ["Record ID", "Core Principles", "Commitments, pledges or actions"]
+        tmp_df = query_df.loc[ :, cols ]
         tmp_df.rename(
             columns={
+                "Core Principles": f"Core_Principle__{clean_topic}",
                 "Commitments, pledges or actions": f"Commitments_pledges_or_actions__{clean_topic}"
-            },
-            inplace=True,
+            }, inplace=True
         )
 
         left = df.set_index("Record ID", drop=False)
@@ -157,20 +147,6 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
                                             "Name": "Demographics.Contact Name",
                                         },
                                         {
-                                            "Aggregation": {
-                                                "Expression": {
-                                                    "Column": {
-                                                        "Expression": {
-                                                            "SourceRef": {"Source": "a"}
-                                                        },
-                                                        "Property": "Core Principles",
-                                                    }
-                                                },
-                                                "Function": 2,
-                                            },
-                                            "Name": "All Areas combined.Core Principles",
-                                        },
-                                        {
                                             "Column": {
                                                 "Expression": {
                                                     "SourceRef": {"Source": "d"}
@@ -178,20 +154,6 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
                                                 "Property": "Entity Name",
                                             },
                                             "Name": "Demographics.Entity Name",
-                                        },
-                                        {
-                                            "Aggregation": {
-                                                "Expression": {
-                                                    "Column": {
-                                                        "Expression": {
-                                                            "SourceRef": {"Source": "a"}
-                                                        },
-                                                        "Property": "Commitments, pledges or actions",
-                                                    }
-                                                },
-                                                "Function": 2,
-                                            },
-                                            "Name": "All Areas combined.Commitments, pledges or actions",
                                         },
                                         {
                                             "Column": {
@@ -306,7 +268,7 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
                                 "Binding": {
                                     "Primary": {
                                         "Groupings": [
-                                            {"Projections": [0, 1, 2, 3, 4, 5, 6]}
+                                            {"Projections": [0, 1, 2, 3, 4]}
                                         ]
                                     },
                                     "DataReduction": {
