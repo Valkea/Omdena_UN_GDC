@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 ####################
 # Author : Kulwinder K.
 # Date : 12/12/2023
@@ -11,30 +13,73 @@
 # Improved the script to run in less than 1 min instead of about 1H
 #####################
 
+"""
+ETL Script for Scraping UN Power BI Dashboard
+
+This script defines the Prefect flow for scraping data from the UN Power BI dashboard.
+
+Functions:
+- page_1_scraping: Task to scrape data from page 1 of the Power BI dashboard.
+- page_2_scraping: Task to scrape data from page 2 of the Power BI dashboard and merge it with existing data.
+
+Flow:
+- omdena_ungdc_etl_scrap_pbi_parent: Prefect flow for scraping data from the UN Power BI dashboard.
+  - Scrapes data from page 1.
+  - Sets record IDs for page 2.
+  - Scrapes data from page 2 and merges it with existing data.
+
+Parameters:
+None
+
+Returns:
+None
+"""
+
 import requests
+from typing import Dict, Any
+
 import pandas as pd
-
 from prefect import flow, task
-
 from json_to_csv import extract
 
 
 @task(name="Scrap page 1", log_prints=True)
-def page_1_scraping(api_url, payload, headers):
+def page_1_scraping(
+    api_url: str, payload: Dict[str, Any], headers: Dict[str, str]
+) -> pd.DataFrame:
+    """
+    Task to scrape data from page 1 of the Power BI dashboard.
+
+    Parameters:
+    - api_url (str): The API URL for the Power BI dashboard.
+    - payload (Dict[str, Any]): The JSON payload for the API request.
+    - headers (Dict[str, str]): The headers for the API request.
+
+    Returns:
+    - pd.DataFrame: The scraped data from page 1.
+    """
+
     print(">>> MAIN TABLE")
+
     table_data = requests.post(api_url, json=payload, headers=headers).json()
-    return extract(table_data, "output_file.csv")
+    return extract(table_data)
 
 
 @task(name="Scrap page 2", log_prints=True)
-def page_2_scraping(api_url, payload_p2, headers, df):
+def page_2_scraping(
+    api_url: str, payload_p2: Dict[str, Any], headers: Dict[str, str], df: pd.DataFrame
+) -> pd.DataFrame:
     """
-    Input Parameters - query_payload to retrieve the Core Principles
-                     - dataframe df
-                     - API URL
-                     - Headers
+    Task to scrape data from page 2 of the Power BI dashboard and merge it with existing data.
 
-    Retuns - df with addition of new columns scarped
+    Parameters:
+    - api_url (str): The API URL for the Power BI dashboard.
+    - payload_p2 (Dict[str, Any]): The JSON payload for the API request for page 2.
+    - headers (Dict[str, str]): The headers for the API request.
+    - df (pd.DataFrame): The existing DataFrame.
+
+    Returns:
+    - pd.DataFrame: The DataFrame with additional columns scraped from page 2.
     """
 
     # SET TOPICS
@@ -56,22 +101,24 @@ def page_2_scraping(api_url, payload_p2, headers, df):
         print(">>> TOPIC:", topic)
         clean_topic = topic.replace(" ", "_").replace("/", "_")
 
-        payload_p2["queries"][0]["Query"]["Commands"]\
-                [0]["SemanticQueryDataShapeCommand"]["Query"]\
-                ["Where"][0]["Condition"]["In"]["Values"]\
-                [0][0]["Literal"]["Value"] = f"'{topic}'"
+        payload_p2["queries"][0]["Query"]["Commands"][0][
+            "SemanticQueryDataShapeCommand"
+        ]["Query"]["Where"][0]["Condition"]["In"]["Values"][0][0]["Literal"][
+            "Value"
+        ] = f"'{topic}'"
 
         result = requests.post(api_url, json=payload_p2, headers=headers).json()
-        query_df = extract(result, f"output_file_{topic[:10]}.csv")
+        query_df = extract(result)
 
         # Merge the `Core Principles` and `Commitments, pledges or actions` columns with the existing DF
         cols = ["Record ID", "Core Principles", "Commitments, pledges or actions"]
-        tmp_df = query_df.loc[ :, cols ]
+        tmp_df = query_df.loc[:, cols]
         tmp_df.rename(
             columns={
                 "Core Principles": f"Core_Principle__{clean_topic}",
-                "Commitments, pledges or actions": f"Commitments_pledges_or_actions__{clean_topic}"
-            }, inplace=True
+                "Commitments, pledges or actions": f"Commitments_pledges_or_actions__{clean_topic}",
+            },
+            inplace=True,
         )
 
         left = df.set_index("Record ID", drop=False)
@@ -79,7 +126,6 @@ def page_2_scraping(api_url, payload_p2, headers, df):
         df = left.join(right, how="left", lsuffix="", rsuffix=f"__{clean_topic}")
 
     else:
-
         print(">>> PROCESS DESCRIPTION")
         # Merge the `Process description` column on the last call
         left = df.set_index("Record ID", drop=False)
@@ -94,6 +140,12 @@ def page_2_scraping(api_url, payload_p2, headers, df):
 
 @flow(log_prints=True)
 def omdena_ungdc_etl_scrap_pbi_parent() -> None:
+    """
+    Prefect flow for scraping data from the UN Power BI dashboard.
+
+    Returns:
+    None
+    """
 
     # payload for tables and second page sections
     payload_p1 = {
@@ -267,9 +319,7 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
                                 },
                                 "Binding": {
                                     "Primary": {
-                                        "Groupings": [
-                                            {"Projections": [0, 1, 2, 3, 4]}
-                                        ]
+                                        "Groupings": [{"Projections": [0, 1, 2, 3, 4]}]
                                     },
                                     "DataReduction": {
                                         "DataVolume": 3,
@@ -492,9 +542,9 @@ def omdena_ungdc_etl_scrap_pbi_parent() -> None:
         ]
         for x in record_id
     ]
-    payload_p2["queries"][0]["Query"]["Commands"][0][
-        "SemanticQueryDataShapeCommand"
-    ]["Query"]["Where"][1]["Condition"]["In"]["Values"] = ids
+    payload_p2["queries"][0]["Query"]["Commands"][0]["SemanticQueryDataShapeCommand"][
+        "Query"
+    ]["Where"][1]["Condition"]["In"]["Values"] = ids
 
     ##### START SCRAPING P2 #####
 
