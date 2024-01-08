@@ -7,7 +7,6 @@ import pandas as pd
 
 # Converts the JSON output of a PowerBI query to a CSV file
 def extract(input_json, output_file):
-
     data = input_json["results"][0]["result"]["data"]
     dm0 = data["dsr"]["DS"][0]["PH"][0]["DM0"]
     columns_types = dm0[0]["S"]
@@ -31,10 +30,9 @@ def extract(input_json, output_file):
 
 
 def to_dataframe(columns, dm0):
-
     data = pd.DataFrame({}, columns=columns)
     for item in dm0:
-        data.loc[len(data)] = item['C']
+        data.loc[len(data)] = item["C"]
 
     return data
 
