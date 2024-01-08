@@ -35,7 +35,8 @@ from deepsearch.cps.client.api import CpsApi
 from prefect import flow, task
 from prefect_aws import S3Bucket
 
-from etl_common import read_AWS, write_AWS, get_arguments
+from flows.etl_common import read_AWS, write_AWS, get_arguments
+# from flows.preprocessing.metadata_extractors import example_summary_extractor
 
 
 @task(name="Parse PDF", log_prints=True)
@@ -132,6 +133,7 @@ def parse_JSON(
     bloc_indexes = []
     last_index = pd_chunks.shape[0]
     ext_text = ""
+    # summary = example_summary_extractor()
 
     for item in data.get("main-text", []):
         if item["name"] == "subtitle-level-1" and item["type"] == "subtitle-level-1":
@@ -167,6 +169,7 @@ def parse_JSON(
                 "header": last_header,
                 "chunk": ext_text,
                 "bloc": "X",
+                # **summary
             }
 
             pd_chunks = pd.concat(
@@ -226,6 +229,7 @@ def omdena_ungdc_etl_pdf_parsing_parent(max_doc: int = None) -> None:
             "header",
             "chunk",
             "bloc",
+            # "summary"
         ]
         pd_chunks = pd.DataFrame(columns=columns)
 
