@@ -9,17 +9,3 @@ sentence-transformers==2.2.2
 chromadb==0.4.21
 # weaviate-client==v4.4b2
 weaviate-client==3.*
-
-# pypdf2
-# llama-index
-# llama-hub
-# prefect-gcp[cloud_storage]==0.2.3
-# pandas==1.5.2
-# prefect-sqlalchemy==0.2.2
-# prefect-github
-# protobuf==4.21.11
-# pyarrow==10.0.1
-# pandas-gbq==0.18.1
-# psycopg2-binary==2.9.5
-# sqlalchemy==1.4.46
-# Unidecode
