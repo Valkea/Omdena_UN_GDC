@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
 
 """
-ETL Pipeline for ...
+ETL Pipeline for PowerBI CSV Parsing
+
+This script defines a Prefect flow for parsing a PowerBI CSV file and updating the chunks dataframe.
+
+Tasks:
+- PBI_parse_csv: Parses PowerBI CSV data and updates the chunks dataframe.
+
+Prefect Flow:
+- omdena_ungdc_etl_powerbi_csv_parsing_parent: Orchestrates the process of parsing PowerBI CSV data.
+  - Initializes variables for local directory, S3 bucket, and file paths.
+  - Reads the existing files tracker CSV and extracted chunks CSV from AWS S3.
+  - Parses PowerBI CSV data and updates the chunks dataframe.
+  - Saves the updated chunks dataframe and files tracker CSV to local and uploads to AWS S3.
+
+Note: Ensure that the required packages are installed for proper execution.
 """
 
 import os
 from pathlib import Path
+from typing import Optional, Tuple
 
 import pandas as pd
 from llmsherpa.readers import LayoutPDFReader
@@ -19,7 +34,18 @@ from etl_common import read_AWS, write_AWS, get_arguments
 
 
 @task(name="PowerBI Parse CSV", log_prints=True)
-def PBI_parse_csv( powerbi_data: pd.DataFrame, pd_chunks: pd.DataFrame, files_tracker: pd.DataFrame):
+def PBI_parse_csv( powerbi_data: pd.DataFrame, pd_chunks: pd.DataFrame, files_tracker: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Task to parse PowerBI CSV data and update the chunks dataframe.
+
+    Parameters:
+    - powerbi_data (pd.DataFrame): PowerBI CSV data.
+    - pd_chunks (pd.DataFrame): Existing chunks dataframe.
+    - files_tracker (pd.DataFrame): Existing files tracker dataframe.
+
+    Returns:
+    Tuple[pd.DataFrame, pd.DataFrame]: Updated chunks dataframe and files tracker dataframe.
+    """
 
     num_new = num_update = 0
     for i, row in powerbi_data.iterrows():
@@ -104,16 +130,17 @@ def PBI_parse_csv( powerbi_data: pd.DataFrame, pd_chunks: pd.DataFrame, files_tr
 
 
 @flow(log_prints=True)
-def omdena_ungdc_etl_powerbi_csv_parsing_parent(max_doc: int = None) -> None:
+def omdena_ungdc_etl_powerbi_csv_parsing_parent(max_doc: Optional[int] = None) -> None:
     """
-    Prefect flow for orchestrating PDF parsing using llmsherpa.
+    Prefect flow for orchestrating PowerBI CSV parsing.
 
     Parameters:
-    - max_doc (int): The maximum number of documents to process
+    - max_doc (Optional[int]): The maximum number of documents to process.
 
     Returns:
     None
     """
+
     print("ETL | CSV parsing")
 
     # Get the list of files to ingest
