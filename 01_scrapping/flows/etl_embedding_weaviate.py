@@ -37,7 +37,7 @@ from prefect.utilities.annotations import quote
 
 import weaviate
 
-from flows.etl_common import read_AWS, write_AWS, get_arguments
+from etl_common import read_AWS, write_AWS, get_arguments
 
 
 @task(name="Initialize VectorDatabase", log_prints=True)

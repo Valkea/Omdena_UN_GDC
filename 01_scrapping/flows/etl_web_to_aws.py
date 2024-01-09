@@ -42,7 +42,7 @@ from prefect_aws import S3Bucket
 
 # from prefect.tasks import task_input_hash
 
-from flows.etl_common import read_AWS, write_AWS, get_arguments
+from etl_common import read_AWS, write_AWS, get_arguments
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",

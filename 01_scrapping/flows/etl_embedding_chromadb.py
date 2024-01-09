@@ -31,7 +31,7 @@ from prefect import flow, task
 from prefect_aws import S3Bucket
 from prefect.utilities.annotations import quote
 
-from flows.etl_common import read_AWS, write_AWS, get_arguments
+from etl_common import read_AWS, write_AWS, get_arguments
 
 import chromadb
 from chromadb.utils import embedding_functions

@@ -28,7 +28,7 @@ from llmsherpa.readers import LayoutPDFReader
 from prefect import flow, task
 from prefect_aws import S3Bucket
 
-from flows.etl_common import read_AWS, write_AWS, get_arguments
+from etl_common import read_AWS, write_AWS, get_arguments
 
 # from llama_index import VectorStoreIndex
 
