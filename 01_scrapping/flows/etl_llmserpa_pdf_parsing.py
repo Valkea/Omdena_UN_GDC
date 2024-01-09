@@ -80,7 +80,7 @@ def parse_PDF(
             "type": None,
             "header": header,
             "chunk": chunk.to_text(),
-            "bloc": "X"
+            "bloc": None
             # "header_chunk": chunk.to_context_text(),
         }
         pd_chunks = pd.concat(

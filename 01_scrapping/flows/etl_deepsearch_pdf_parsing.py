@@ -168,7 +168,7 @@ def parse_JSON(
                 "type": ext_type,
                 "header": last_header,
                 "chunk": ext_text,
-                "bloc": "X",
+                "bloc": Noneœ,
                 # **summary
             }
 
