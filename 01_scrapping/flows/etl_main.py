@@ -44,11 +44,16 @@ def omdena_ungdc_etl_main_flow(max_doc: int = None) -> None:
 
     print("Call Web to AWS-S3")
     omdena_ungdc_etl_web_to_aws_parent(max_doc)
-    # Another source ?
 
     print("Call PDF parser")
     # omdena_ungdc_etl_pdf_parsing_parent(max_doc)
     omdena_ungdc_etl_llmsherpa_pdf_parsing_parent(max_doc)
+
+    print("Call PowerBI scraper")
+    omdena_ungdc_etl_scrap_pbi_parent()
+
+    print("Call PowerBI parser")
+    omdena_ungdc_etl_powerbi_csv_parsing_parent()
 
     print("Call Embedding & Indexing")
     omdena_ungdc_etl_embedding_parent(max_doc)
