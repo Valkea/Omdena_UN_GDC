@@ -116,6 +116,7 @@ def add_object(collection_name: str, client: weaviate.Client, obj: dict) -> None
 
         # Calculate and display progress
         counter += 1
+
         if counter % print_interval == 0:
             print(f"Imported {counter} articles...")
 
@@ -144,9 +145,14 @@ def populate_vectordb(
 
     global counter
     counter = i = 0
+    num_files = len(files_tracker)
 
-    for file in files_tracker.itertuples():
-        print(f"Dealing with {file.file_name}")
+    for j, file in enumerate(files_tracker.itertuples()):
+
+        if max_doc is not None and i >= max_doc and file.file_name[-3:].lower() == "pdf" :
+            break
+
+        print(f"{j}/{num_files} | Dealing with {file.file_name}")
 
         doc_chunks = data[data["file_hash"] == file.file_hash]
 
@@ -193,9 +199,8 @@ def populate_vectordb(
                 f"The last version of {file.file_name} has already been embedded and indexed"
             )
 
-        i += 1
-        if max_doc is not None and i >= max_doc:
-            break
+        if file.file_name[-3:].lower() == "pdf":
+            i += 1
 
     # Check VectorDB content
     classes = [d["class"] for d in client.schema.get()["classes"]]
