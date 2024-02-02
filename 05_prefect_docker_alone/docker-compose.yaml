@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  ## Prefect Agent
+  agent:
+    image: valkea/ungdc_prefect_agent:latest
+    restart: always
+    # entrypoint: ["prefect", "agent", "start", "-q", "default"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+     - PREFECT_API_URL=${PREFECT_API_URL} # http://server:4200/api
+     - PREFECT_API_KEY=${PREFECT_API_KEY}
+ 
+volumes:
+  prefect:
+  # db:
+networks:
+  default:
+    name: prefect-network
