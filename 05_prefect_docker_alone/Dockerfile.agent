@@ -1,0 +1,11 @@
+FROM prefecthq/prefect:2-python3.10
+
+# Add our requirements.txt file to the image and install dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt --trusted-host pypi.python.org --no-cache-dir
+
+# Install Docker from Docker Inc. repositories so we can run the Docker containing Flows
+RUN curl -sSL https://get.docker.com/ | sh
+
+# Run AGENT
+ENTRYPOINT ["prefect", "agent", "start", "-q", "default"]
