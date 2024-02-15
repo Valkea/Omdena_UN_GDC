@@ -43,18 +43,23 @@ Edit `config.cfg` and update the various fields.
 ```
 
 ## 4 - Deployment
+Let's use Terraform the provision the ressources and deploy our `PREFECT Agent`
 
+### 4.1 - Edit the files
+Edit `terraform/variables.tf` and update the various fields.
 
-### 4.1 - Populate the AWS infrastructure
-At first this will setup and run the requested infrastures then it will pull and run the `PREFECT Agent`docker which will in turn pull and run the `PREFECT Flows` container whenever requested through the PREFECT Cloud interface (or via command lines).
+### 4.2 - Populate the AWS infrastructure
 
 Use the following commands from inside the terraform folder, to see the plan and apply the plan:
+
 ```code
 >>> terraform plan
 >>> terraform apply
 ```
 
-### 4.2 - Destroy the AWS infrastructure
+Once started, the EC2 instance will execute the `config_docker.sh` file and run the `PREFECT Agent` container which will in turn pull and run the `PREFECT Flows` container whenever requested through the PREFECT Cloud interface (or via command lines).
+
+### 4.3 - Destroy the AWS infrastructure
 To shut down the deployment, one can use the following command (from inside the terraform folder):
 
 ```code
