@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+
+  ## Weaviate Docker Server
+  weaviate:
+    image: semitechnologies/weaviate:1.23.0
+    restart: on-failure:0
+    ports:
+    - 8080:8080
+    - 50051:50051
+    environment:
+      QUERY_DEFAULTS_LIMIT: 20
+      DISK_USE_READONLY_PERCENTAGE: 99
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: text2vec-transformers
+      ENABLE_MODULES: text2vec-transformers
+      TRANSFORMERS_INFERENCE_API: http://t2v-transformers:8080
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - ./data/weaviate_data:/var/lib/weaviate # <== set a volume here
+  t2v-transformers:
+    image: semitechnologies/transformers-inference:sentence-transformers-all-MiniLM-L6-v2
+    environment:
+      ENABLE_CUDA: 0 # set to 1 to enable
+      # NVIDIA_VISIBLE_DEVICES: all # enable if running with CUDA
+
+  ## Prefect Agent
+  agent:
+    image: valkea/ungdc_prefect_agent:latest
+    restart: always
+    # entrypoint: ["prefect", "agent", "start", "-q", "default"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+     - PREFECT_API_URL=${PREFECT_API_URL} # http://server:4200/api
+     - PREFECT_API_KEY=${PREFECT_API_KEY}
+    depends_on: [weaviate]
+ 
+volumes:
+  prefect:
+  # db:
+networks:
+  default:
+    name: prefect-network
+

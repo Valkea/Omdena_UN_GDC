@@ -1,0 +1,15 @@
+FROM prefecthq/prefect:2-python3.10
+
+# ENV WEAVIATE_URL http://0.0.0.0:8080
+# Deactivated so that the Docker-compose env can set it up
+
+# Add our requirements.txt file to the image and install dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt --trusted-host pypi.python.org --no-cache-dir
+
+# Add our flow code to the image
+# COPY flows /opt/prefect/flows
+COPY ["flows/", "./flows"]
+
+# Run our flow script when the container starts
+# CMD ["python", "flows/etl_main.py", "-m 1"]
