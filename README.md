@@ -1,5 +1,7 @@
 # Omdena_UN_GDC
 
+Check the `lab` folder to explore the various elements of the deployement more easily.
+
 ## 1 - Credentials
 One needs to create an `.env` file with the following keys:
 - AWS_ACCESS_KEY
