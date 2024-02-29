@@ -11,7 +11,7 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "eu-west-1"
+  region = var.instance_region
 }
 
 ################################################################################
@@ -73,6 +73,7 @@ resource "aws_spot_instance_request" "my_ec2_spot_instance" {
   count		= "${var.spot_instance == "true" ? 1 : 0}"
   associate_public_ip_address = "true" 
   vpc_security_group_ids      = [aws_security_group.sg.id]
+  availability_zone = var.instance_availability_zone
 
   wait_for_fulfillment 	= "true"
   # block_duration_minutes	= 120
@@ -95,7 +96,8 @@ resource "aws_instance" "my_ec2_instance" {
   count		= "${var.spot_instance == "true" ? 0 : 1}"
   associate_public_ip_address = "true" 
   vpc_security_group_ids      = [aws_security_group.sg.id]
-
+  availability_zone = var.instance_availability_zone
+  
   tags = {
     Name = "MyEC2Instance"
   }
