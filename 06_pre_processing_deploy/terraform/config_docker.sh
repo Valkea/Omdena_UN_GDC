@@ -13,10 +13,22 @@ echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docke
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-echo "" && echo "@@@@@@@@@@@@@@@ Step 2 : Run a docker image"
+echo "" && echo "@@@@@@@@@@@@@@@ Step 2 : Fetch docker compose file"
 
-sudo docker run -d -p 5000:5000 --pull=always --restart=always --privileged "${docker_image}"
+#curl -L -o docker-compose.yaml https://raw.githubusercontent.com/Valkea/Omdena_UN_GDC/main/05_pre_processing_build/docker-compose.yaml
+curl -L -o docker-compose.yaml ${docker_compose_path}
+ls
 
-echo "" && echo "@@@@@@@@@@@@@@@ Step 3 : Check the running images"
+echo "" && echo "@@@@@@@@@@@@@@@ Step 3 : Perenize PREFECT environment variables"
+
+echo "PREFECT_API_URL = ${PREFECT_API_URL}" >> .env
+echo "PREFECT_API_KEY = ${PREFECT_API_KEY}" >> .env
+
+echo "" && echo "@@@@@@@@@@@@@@@ Step 4 : Run a docker images"
+
+# sudo docker run -d -p 5000:5000 --pull=always --restart=always --privileged "${docker_image}"
+sudo docker compose up -d
+
+echo "" && echo "@@@@@@@@@@@@@@@ Step 5 : Check the running images"
 
 sudo docker ps -a
