@@ -117,6 +117,19 @@ resource "aws_instance" "my_ec2_instance" {
 #   state       = "stopped"
 # }
 
+# # Add extra space on the instance
+# 
+# resource "aws_ebs_volume" "volume" {
+#   type = "gp3"
+#   size = var.instance_ebs_drive_size
+#   availability_zone = var.instance_availability_zone
+# }
+# 
+# resource "aws_volume_attachment" "attachment" {
+#   volume_id   = aws_ebs_volume.volume.id
+#   instance_id = "${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+#   device_name = "/dev/sda2"
+# }
 
 ################################################################################
 # AWS EventBridge Scheduler                                                        
