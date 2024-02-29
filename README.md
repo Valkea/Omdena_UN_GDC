@@ -1,6 +1,6 @@
 # Omdena_UN_GDC
 
-Check the `lab` folder to explore the various elements of the deployement more easily.
+Check the `lab` folder to explore the various elements of the deployment more easily.
 
 ## 1 - Credentials
 One needs to create an `.env` file with the following keys:
@@ -34,7 +34,7 @@ One also needs to get .PEM files to allow Terraform to upload the script that wi
 > Note: We could improve this with a GitHub Action or CirlceCI CI/CD to automatically build and push the containers on the docker hub or on the AWS ECS.
 
 ## 03 - Setup PREFECT Cloud
-In order to be able to control the deployed `PREFECT Agent`, we need to register the PREFECT blocks and pthe deployement on the PREFECT Cloud server.
+In order to be able to control the deployed `PREFECT Agent`, we need to register the PREFECT blocks and the deployment on the PREFECT Cloud server.
 
 ### 3.1 - Edit the files
 Edit `config.cfg` and update the various fields.
@@ -53,6 +53,10 @@ In order to test and run the Prefect pre-processing locally, one can use the fol
 ```
 
 ### 4.1
+One can check that the Weaviate instance is running by checking localhost with port 8080.
+That's a good indicator that the stack is ready.
+
+### 4.2
 On the Prefect pipeline is running, you can test it by waiting the the cronjob and by triggering the Deployment on the Prefect Cloud.
 
 - go to your [Prefect Cloud](https://app.prefect.cloud)
@@ -81,9 +85,14 @@ Use the following commands from inside the terraform folder, to see the plan and
 
 Once started, the EC2 instance will execute the `config_docker.sh` file and run the `PREFECT Agent` container which will in turn pull and run the `PREFECT Flows` container whenever requested through the PREFECT Cloud interface (or via command lines).
 
-At this point you can use instructions from 4.1 to test the deployement.
 
-### 5.4 - Destroy the AWS infrastructure
+### 5.4 - Testing/Running the pipeline
+At this point you can use instructions from 4.1 and 4.2 to test the deployment.
+
+The `terraform apply` command should have displayed the current external IP of the EC2 instance (and links to directly access the Weaviate API). It this is not the case, just use `terraform apply` a second time (in some case the EC2 is not ready yet and can't return the external IP)
+
+
+### 5.5 - Destroy the AWS infrastructure
 To shut down the deployment, one can use the following command (from inside the terraform folder):
 
 ```code
