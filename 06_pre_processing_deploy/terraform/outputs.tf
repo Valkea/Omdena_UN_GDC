@@ -10,13 +10,13 @@ output "ubuntu_dns" {
   description = "Instance DNS"
 }
 
-output "Flask_PUBLIC_DNS" {
-  value = "http://${aws_eip.ip-vps-env.public_ip}:5000"
+output "Weaviate_PUBLIC_DNS" {
+  value = "http://${aws_eip.ip-vps-env.public_ip}:8080"
   description = "Instance IP"
 }
 
-output "Flask_PUBLIC_URL" {
-  value = "http://${aws_eip.ip-vps-env.public_dns}:5000"
+output "Weaviate_PUBLIC_URL" {
+  value = "http://${aws_eip.ip-vps-env.public_dns}:8080"
   description = "Instance DNS"
 }
 
