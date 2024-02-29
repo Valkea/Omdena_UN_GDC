@@ -15,9 +15,16 @@ variable "ec2_pem_pub_file" {
   description = "The path to the public PEM key used to upload the ec2_config_file to the EC2 instance."
 }
 
-variable "prepro_docker_image" {
+# variable "prepro_docker_image" {
+#   type = string
+#   # default = "valkea/ungdc_prefect_agent:latest"
+#   default = "valkea/deploy_lab:latest"
+#   description = "The path to the Docker image to start on the Preprocessing EC2 instance."
+# }
+
+variable "prepro_docker_compose_path" {
   type = string
-  default = "valkea/ungdc_prefect_agent:latest"
+  default = "https://raw.githubusercontent.com/Valkea/Omdena_UN_GDC/main/05_pre_processing_build/docker-compose.yaml"
   description = "The path to the Docker image to start on the Preprocessing EC2 instance."
 }
 
@@ -25,9 +32,29 @@ variable "prepro_docker_image" {
 # EC2 for preprocessing (data-collection / data preparation)
 ################################################################################
 
+variable "instance_region" {
+  type    = string
+  default = "eu-west-1"
+}
+
+variable "instance_availability_zone" {
+  type    = string
+  default = "eu-west-1a" 
+}
+
+variable "instance_ebs_drive_size" {
+  type    = string
+  default = "25" 
+}
+
+variable "instance_ebs_delete_on_termination" {
+  type    = string
+  default = "true" 
+}
+
 variable "instance_type" {
   type    = string
-  default = "t2.micro"
+  default = "t2.small" # "t2.micro"
 }
 
 variable "instance_ami" {
@@ -44,7 +71,7 @@ variable "spot_instance" {
 
 variable "spot_price" {
   type = string
-  default = "0.0060"
+  default = "0.01" # "0.0060"
   description = "Maximum price to pay for spot instance"
 }
 
@@ -83,13 +110,13 @@ variable "scheduler_cron_timezine" {
 
 variable "s3_instance" {
   type = string
-  default = "false"
+  default = "true"
   description = "This value is true if we want to use an S3 instance"
 }
 
 variable "s3_name" {
   type = string
-  default = "omdena-un-gdc-bucket-02"
+  default = "omdena-un-gdc-bucket"
   description = "This value used as S3 instance name"
 }
 
