@@ -9,6 +9,11 @@ terraform {
   }
 }
 
+# Collect environment variables
+locals {
+  environment_variables = { for tuple in regexall("(.*) = (.*)", file(".env")) : tuple[0] => sensitive(tuple[1]) }
+}
+
 # Configure the AWS Provider
 provider "aws" {
   region = var.instance_region
@@ -85,9 +90,14 @@ resource "aws_spot_instance_request" "my_ec2_spot_instance" {
   key_name  = aws_key_pair.deployer.id
   # user_data = file("../config_docker.sh")
   # user_data = file(var.ec2_config_file)
-  user_data = base64encode(templatefile(var.ec2_config_file, {
-        docker_image = var.prepro_docker_image
-      } ))
+  # user_data = base64encode(templatefile(var.ec2_config_file, { docker_image = var.prepro_docker_image } ))
+  user_data = base64encode(templatefile(var.ec2_config_file, { docker_image = "", docker_compose_path = var.prepro_docker_compose_path, PREFECT_API_KEY = local.environment_variables["PREFECT_API_KEY"], PREFECT_API_URL = local.environment_variables["PREFECT_API_URL"] } ))
+
+  root_block_device {
+    delete_on_termination = var.instance_ebs_delete_on_termination
+    encrypted             = true
+    volume_size           = var.instance_ebs_drive_size
+  }
 }
 
 resource "aws_instance" "my_ec2_instance" {
@@ -105,9 +115,14 @@ resource "aws_instance" "my_ec2_instance" {
   key_name  = aws_key_pair.deployer.id
   # user_data = file("../config_docker.sh")
   # user_data = file(var.ec2_config_file)
-  user_data = base64encode(templatefile(var.ec2_config_file, {
-        docker_image = var.prepro_docker_image
-      } ))
+  # user_data = base64encode(templatefile(var.ec2_config_file, { docker_image = var.prepro_docker_image } ))
+  user_data = base64encode(templatefile(var.ec2_config_file, { docker_image = "", docker_compose_path = var.prepro_docker_compose_path, PREFECT_API_KEY = local.environment_variables["PREFECT_API_KEY"], PREFECT_API_URL = local.environment_variables["PREFECT_API_URL"] } ))
+
+  root_block_device {
+    delete_on_termination = var.instance_ebs_delete_on_termination
+    encrypted             = true
+    volume_size           = var.instance_ebs_drive_size
+  }
 }
 
 # Define the initial state of the EC2 instance 
