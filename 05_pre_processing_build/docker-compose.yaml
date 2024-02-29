@@ -9,7 +9,6 @@ services:
     ports:
     - 8080:8080
     - 50051:50051
-    - 53:53
     environment:
       QUERY_DEFAULTS_LIMIT: 20
       DISK_USE_READONLY_PERCENTAGE: 99
@@ -26,8 +25,6 @@ services:
     environment:
       ENABLE_CUDA: 0 # set to 1 to enable
       # NVIDIA_VISIBLE_DEVICES: all # enable if running with CUDA
-    ports:
-    - 53:53
 
   ## Prefect Agent
   agent:
