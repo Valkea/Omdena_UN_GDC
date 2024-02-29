@@ -120,124 +120,124 @@ resource "aws_instance" "my_ec2_instance" {
 # AWS EventBridge Scheduler                                                        
 ################################################################################
 
-resource "aws_scheduler_schedule" "ec2-start-schedule" {
-  name = "ec2-start-schedule"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
-
-  schedule_expression = var.scheduler_start_cron
-  schedule_expression_timezone = var.scheduler_cron_timezine
-  description = "Start instances event"
-
-  target {
-    arn = "arn:aws:scheduler:::aws-sdk:ec2:startInstances"
-    role_arn = aws_iam_role.scheduler-ec2-role.arn
-
-    input = jsonencode({
-      "InstanceIds": [
-  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-      ]
-    })
-  }
-}
-
-resource "aws_scheduler_schedule" "ec2-stop-schedule" {
-  name = "ec2-stop-schedule"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
-
-  schedule_expression = var.scheduler_stop_cron
-  schedule_expression_timezone = var.scheduler_cron_timezine
-  description = "Stop instances event"
-
-  target {
-    arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
-    role_arn = aws_iam_role.scheduler-ec2-role.arn
-
-    input = jsonencode({
-      "InstanceIds": [
-  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-      ]
-    })
-  }
-}
-
-locals {
-  shut_time = substr(tostring(timeadd(timestamp(), "5m")), 0, 19)
-  # shut_time = formatdate("YYYY-MM-DDThh:mm:ss", timeadd(timestamp(), "5m"))
-  shut_zone = formatdate("ZZZ", timestamp())
-}
-
-resource "aws_scheduler_schedule" "ec2-stop-once-schedule" {
-  name = "ec2-stop-once-schedule"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
- 
-  schedule_expression = "at(${local.shut_time})"
-  schedule_expression_timezone = local.shut_zone
-  description = "Stop once instances event"
-
-  target {
-    arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
-    role_arn = aws_iam_role.scheduler-ec2-role.arn
-
-    input = jsonencode({
-      "InstanceIds": [
-  	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
-      ]
-    })
-  }
-}
-
-resource "aws_iam_policy" "scheduler_ec2_policy" {
-  name = "scheduler_ec2_policy"
-
-  policy = jsonencode(
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "VisualEditor0",
-                "Effect": "Allow",
-                "Action": [
-                    "ec2:StartInstances",
-                    "ec2:StopInstances"
-                ],
-                "Resource": [
-  		    "*",
-		    # "${aws_instance.my_ec2_instance[0].arn}:*",
-		    # "${aws_instance.my_ec2_instance[0].arn}"
-                ],
-            }
-        ]
-    }
-  )
-}
-
-resource "aws_iam_role" "scheduler-ec2-role" {
-  name = "scheduler-ec2-role"
-  managed_policy_arns = [aws_iam_policy.scheduler_ec2_policy.arn]
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
-        Principal = {
-          Service = "scheduler.amazonaws.com"
-        }
-      },
-    ]
-  })
-}
+# resource "aws_scheduler_schedule" "ec2-start-schedule" {
+#   name = "ec2-start-schedule"
+# 
+#   flexible_time_window {
+#     mode = "OFF"
+#   }
+# 
+#   schedule_expression = var.scheduler_start_cron
+#   schedule_expression_timezone = var.scheduler_cron_timezine
+#   description = "Start instances event"
+# 
+#   target {
+#     arn = "arn:aws:scheduler:::aws-sdk:ec2:startInstances"
+#     role_arn = aws_iam_role.scheduler-ec2-role.arn
+# 
+#     input = jsonencode({
+#       "InstanceIds": [
+#   	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+#       ]
+#     })
+#   }
+# }
+# 
+# resource "aws_scheduler_schedule" "ec2-stop-schedule" {
+#   name = "ec2-stop-schedule"
+# 
+#   flexible_time_window {
+#     mode = "OFF"
+#   }
+# 
+#   schedule_expression = var.scheduler_stop_cron
+#   schedule_expression_timezone = var.scheduler_cron_timezine
+#   description = "Stop instances event"
+# 
+#   target {
+#     arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+#     role_arn = aws_iam_role.scheduler-ec2-role.arn
+# 
+#     input = jsonencode({
+#       "InstanceIds": [
+#   	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+#       ]
+#     })
+#   }
+# }
+# 
+# locals {
+#   shut_time = substr(tostring(timeadd(timestamp(), "5m")), 0, 19)
+#   # shut_time = formatdate("YYYY-MM-DDThh:mm:ss", timeadd(timestamp(), "5m"))
+#   shut_zone = formatdate("ZZZ", timestamp())
+# }
+# 
+# resource "aws_scheduler_schedule" "ec2-stop-once-schedule" {
+#   name = "ec2-stop-once-schedule"
+# 
+#   flexible_time_window {
+#     mode = "OFF"
+#   }
+#  
+#   schedule_expression = "at(${local.shut_time})"
+#   schedule_expression_timezone = local.shut_zone
+#   description = "Stop once instances event"
+# 
+#   target {
+#     arn = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+#     role_arn = aws_iam_role.scheduler-ec2-role.arn
+# 
+#     input = jsonencode({
+#       "InstanceIds": [
+#   	"${var.spot_instance == "true" ? "${aws_spot_instance_request.my_ec2_spot_instance[0].spot_instance_id}" : "${aws_instance.my_ec2_instance[0].id}"}"
+#       ]
+#     })
+#   }
+# }
+# 
+# resource "aws_iam_policy" "scheduler_ec2_policy" {
+#   name = "scheduler_ec2_policy"
+# 
+#   policy = jsonencode(
+#     {
+#         "Version": "2012-10-17",
+#         "Statement": [
+#             {
+#                 "Sid": "VisualEditor0",
+#                 "Effect": "Allow",
+#                 "Action": [
+#                     "ec2:StartInstances",
+#                     "ec2:StopInstances"
+#                 ],
+#                 "Resource": [
+#   		    "*",
+# 		    # "${aws_instance.my_ec2_instance[0].arn}:*",
+# 		    # "${aws_instance.my_ec2_instance[0].arn}"
+#                 ],
+#             }
+#         ]
+#     }
+#   )
+# }
+# 
+# resource "aws_iam_role" "scheduler-ec2-role" {
+#   name = "scheduler-ec2-role"
+#   managed_policy_arns = [aws_iam_policy.scheduler_ec2_policy.arn]
+# 
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Action = "sts:AssumeRole"
+#         Effect = "Allow"
+#         Sid    = ""
+#         Principal = {
+#           Service = "scheduler.amazonaws.com"
+#         }
+#       },
+#     ]
+#   })
+# }
 
 
 ################################################################################
